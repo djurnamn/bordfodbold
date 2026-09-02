@@ -18,6 +18,7 @@ export function applyScoreChange(
   matchId: string,
   next: Score | null,
   stamp: ChangeStamp,
+  undoes?: string,
 ): Tournament {
   const match = tournament.matches.find((candidate) => candidate.id === matchId);
   if (match === undefined) {
@@ -36,7 +37,7 @@ export function applyScoreChange(
     return tournament;
   }
 
-  const change: ScoreChange = { id: stamp.changeId, matchId, previous, next, changedAt: stamp.at };
+  const change: ScoreChange = { id: stamp.changeId, matchId, previous, next, changedAt: stamp.at, ...(undoes === undefined ? {} : { undoes }) };
   return {
     ...tournament,
     matches: tournament.matches.map((candidate) =>
@@ -55,18 +56,28 @@ export function applyScoreChange(
 }
 
 /**
- * Reverts the most recent change, as a change of its own - the trail never
- * loses an entry.
+ * The change an undo would revert: the newest entry that is not itself an
+ * undo and has not been undone already. Repeated undos walk back through the
+ * history; an undo never re-applies an undo.
+ */
+export function undoableChange(tournament: Tournament): ScoreChange | undefined {
+  const undone = new Set(tournament.activity.map((change) => change.undoes).filter((id) => id !== undefined));
+  return tournament.activity.find((change) => change.undoes === undefined && !undone.has(change.id));
+}
+
+/**
+ * Reverts the newest change not yet undone, as a change of its own - the
+ * trail never loses an entry, and the new entry records which one it undid.
  */
 export function undoLastChange(tournament: Tournament, stamp: ChangeStamp): Tournament {
-  const last = tournament.activity[0];
-  if (last === undefined) {
+  const target = undoableChange(tournament);
+  if (target === undefined) {
     return tournament;
   }
-  if (!tournament.matches.some((match) => match.id === last.matchId)) {
-    throw new DomainError("The last change is for a match that no longer exists.");
+  if (!tournament.matches.some((match) => match.id === target.matchId)) {
+    throw new DomainError("The change to undo is for a match that no longer exists.");
   }
-  return applyScoreChange(tournament, last.matchId, last.previous, stamp);
+  return applyScoreChange(tournament, target.matchId, target.previous, stamp, target.id);
 }
 
 function sameScore(a: Score | null, b: Score | null): boolean {

@@ -43,6 +43,7 @@ export const scoreChangeValidator = v.object({
   previous: scoreValidator,
   next: scoreValidator,
   changedAt: v.string(),
+  undoes: v.optional(v.string()),
 });
 
 export const tournamentFields = {

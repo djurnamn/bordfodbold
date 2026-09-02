@@ -55,6 +55,8 @@ export interface ScoreChange {
   previous: Score | null;
   next: Score | null;
   changedAt: string;
+  /** Set on an undo: the id of the change it reverted. */
+  undoes?: string;
 }
 
 export interface Tournament {

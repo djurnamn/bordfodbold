@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyScoreChange, undoLastChange } from "../src/apply";
+import { applyScoreChange, undoLastChange, undoableChange } from "../src/apply";
 import { DomainError } from "../src/types";
 import { tournament } from "./fixtures";
 
@@ -58,5 +58,22 @@ describe("undoLastChange", () => {
   it("is a no-op with an empty trail", () => {
     const t = tournament(["a", "b"]);
     expect(undoLastChange(t, stamp(1))).toBe(t);
+  });
+
+  it("never re-applies an undo: repeated undos walk back, then stop", () => {
+    let t = applyScoreChange(tournament(["a", "b", "c"]), "a--b--1", [10, 4], stamp(1));
+    t = applyScoreChange(t, "a--c--1", [10, 6], stamp(2));
+    t = undoLastChange(t, stamp(3));
+    expect(t.matches.find((match) => match.id === "a--c--1")?.homeScore).toBeNull();
+    expect(t.activity[0]).toMatchObject({ undoes: "change-2" });
+
+    t = undoLastChange(t, stamp(4));
+    expect(t.matches.find((match) => match.id === "a--b--1")?.homeScore).toBeNull();
+    expect(t.activity[0]).toMatchObject({ undoes: "change-1" });
+
+    // Nothing left to undo: the trail stays as it is.
+    expect(undoableChange(t)).toBeUndefined();
+    expect(undoLastChange(t, stamp(5))).toBe(t);
+    expect(t.activity).toHaveLength(4);
   });
 });
