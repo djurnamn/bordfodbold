@@ -1,0 +1,32 @@
+@use "styles/mixins" as djui;
+
+.PinGate {
+  &__brand {
+    @include djui.djui-typography(heading);
+    color: djui.get(foreground, primary);
+    text-decoration: none;
+  }
+
+  &__intro {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  &__kicker {
+    @include djui.djui-typography(caption);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.6;
+  }
+
+  &__title {
+    @include djui.djui-typography(title);
+    margin: 0;
+  }
+
+  &__lead {
+    @include djui.djui-typography(body);
+    margin: 0;
+    opacity: 0.7;
+  }
+}

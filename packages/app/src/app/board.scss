@@ -1,0 +1,79 @@
+@use "styles/mixins" as djui;
+
+.Board {
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: 1.25rem;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "header"
+    "jump"
+    "standings"
+    "plan"
+    "teams"
+    "activity";
+
+  @media (#{djui.width-from(medium)}) {
+    padding: 2rem;
+    gap: 1.5rem;
+    grid-template-columns: minmax(20rem, 2fr) minmax(0, 3fr);
+    grid-template-areas:
+      "header header"
+      "standings plan"
+      "teams activity";
+  }
+
+  > .BoardHeader {
+    grid-area: header;
+  }
+
+  &__jump {
+    grid-area: jump;
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    @include djui.djui-typography(label);
+
+    a {
+      color: djui.get(foreground, primary);
+      text-decoration: none;
+      opacity: 0.7;
+      white-space: nowrap;
+    }
+
+    @media (#{djui.width-from(medium)}) {
+      display: none;
+    }
+  }
+
+  &__panel {
+    @include djui.djui-surface;
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+    min-width: 0;
+
+    &--standings {
+      grid-area: standings;
+    }
+    &--plan {
+      grid-area: plan;
+    }
+    &--teams {
+      grid-area: teams;
+    }
+    &--activity {
+      grid-area: activity;
+    }
+  }
+
+  &__heading {
+    @include djui.djui-typography(caption);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.6;
+    margin: 0;
+  }
+}

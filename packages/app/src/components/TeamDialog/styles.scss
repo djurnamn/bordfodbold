@@ -1,0 +1,95 @@
+@use "styles/mixins" as djui;
+
+.TeamDialog {
+  display: grid;
+  gap: 1rem;
+
+  &__title {
+    @include djui.djui-typography(heading);
+    margin: 0;
+  }
+
+  &__group {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  &__legend {
+    @include djui.djui-typography(label);
+    padding: 0;
+    margin-bottom: 0.25rem;
+  }
+
+  &__members {
+    display: grid;
+    gap: 0.5rem;
+    justify-items: start;
+  }
+
+  &__member {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+  }
+
+  &__swatches {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__swatch {
+    all: unset;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: rgb(var(--team-rgb));
+    cursor: pointer;
+    box-shadow: 0 0 0 0.125rem transparent;
+    transition: box-shadow 0.15s, transform 0.15s;
+    @include djui.djui-focus-ring;
+
+    &--selected {
+      box-shadow: 0 0 0 0.1875rem rgb(var(--djui-current-surface-rgb)), 0 0 0 0.375rem rgb(var(--team-rgb));
+      transform: scale(1.05);
+    }
+  }
+
+  &__emblems {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+    gap: 0.375rem;
+  }
+
+  &__emblem {
+    all: unset;
+    display: grid;
+    place-items: center;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    font-size: 1.375rem;
+    cursor: pointer;
+    background: djui.get(foreground, primary, 0.05);
+    @include djui.djui-focus-ring;
+
+    &:hover {
+      background: djui.get(foreground, primary, 0.12);
+    }
+
+    &--selected {
+      background: djui.get(accent, primary, 0.25);
+      box-shadow: inset 0 0 0 0.125rem djui.get(accent, primary);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+}

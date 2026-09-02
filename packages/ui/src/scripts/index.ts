@@ -58,6 +58,14 @@ export { resolveProgressTranslations } from './progress';
 export type { NumberInputTranslations, ResolvedNumberInputTranslations } from './number-input';
 export { resolveNumberInputTranslations } from './number-input';
 
+export type { PinInputTranslations, ResolvedPinInputTranslations } from './pin-input';
+export {
+  pinInputCellProps,
+  pinInputFirstCellId,
+  pinInputValueArray,
+  resolvePinInputTranslations,
+} from './pin-input';
+
 export type {
   StepperTranslations,
   ResolvedStepperTranslations,

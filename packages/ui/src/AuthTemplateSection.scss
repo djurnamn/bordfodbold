@@ -1,0 +1,12 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+
+@layer djui.components {
+  .DjuiAuthTemplateSection {
+    @include djui-surface-cell;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: var(--djui-component-auth-template-section--padding, 1rem);
+  }
+}

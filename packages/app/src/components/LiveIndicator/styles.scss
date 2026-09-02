@@ -1,0 +1,39 @@
+@use "styles/mixins" as djui;
+
+.LiveIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  @include djui.djui-typography(small);
+
+  &__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: djui.get(context, positive);
+    box-shadow: 0 0 0 0 djui.get(context, positive, 0.6);
+    animation: LiveIndicator-pulse 2s infinite;
+  }
+
+  &__label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  &__updated {
+    opacity: 0.6;
+  }
+}
+
+@keyframes LiveIndicator-pulse {
+  0% {
+    box-shadow: 0 0 0 0 djui.get(context, positive, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 0.5rem djui.get(context, positive, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 djui.get(context, positive, 0);
+  }
+}

@@ -22,6 +22,7 @@
     "@zag-js/dialog": "^1.41.2",
     "@zag-js/i18n-utils": "^1.41.2",
     "@zag-js/number-input": "^1.41.2",
+    "@zag-js/pin-input": "^1.41.2",
     "@zag-js/react": "^1.41.2",
     "@zag-js/switch": "^1.41.2",
     "@zag-js/tabs": "^1.41.2",

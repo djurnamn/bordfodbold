@@ -1,0 +1,16 @@
+@use "styles/mixins" as djui;
+
+.ConfirmDialog {
+  display: grid;
+  gap: 0.75rem;
+
+  &__title {
+    @include djui.djui-typography(heading);
+    margin: 0;
+  }
+
+  &__body {
+    @include djui.djui-typography(body);
+    opacity: 0.85;
+  }
+}

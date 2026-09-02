@@ -1,0 +1,42 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+
+@layer djui.components {
+  .DjuiPinInput {
+    display: inline-flex;
+    flex-direction: column;
+    @include djui-disabled-slots;
+
+    &--disabled {
+      @include djui-disabled-claim($dim: 0.6);
+    }
+
+    &--square {
+      --djui-component-pin-input--radius: 0;
+    }
+
+    &--error &__cell {
+      --djui-component-group-form--ring-width-claim: 0.125rem;
+      --djui-component-group-form--ring-color-claim: rgb(var(--djui-context-negative-rgb));
+    }
+
+    &__control {
+      display: inline-flex;
+      gap: var(--djui-component-pin-input--gap, 0.5em);
+      font-size: var(--djui-component-pin-input--size, var(--djui-component-group-form--size, 1.5rem));
+    }
+
+    &__cell {
+      @include djui-input-base("pin-input", $padding-left: 0, $padding-right: 0);
+      width: djui-form-control-height("pin-input");
+      flex: 0 0 auto;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      caret-color: transparent;
+
+      &::placeholder {
+        color: rgba(var(--djui-foreground-primary-rgb), 0.35);
+      }
+    }
+  }
+}

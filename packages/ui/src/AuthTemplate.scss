@@ -1,0 +1,61 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/color" as color;
+
+@layer djui.components {
+  .DjuiAuthTemplate {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    width: 100%;
+
+    &__header {
+      &:empty {
+        display: none;
+      }
+    }
+
+    &__body {
+      flex: 1;
+      display: flex;
+      align-items: var(--djui-component-auth-template-body--align-items-resolved, center);
+      justify-content: center;
+
+      @media (#{width-to(xsmall)}) {
+        --djui-component-auth-template-body--align-items-resolved: stretch;
+      }
+    }
+
+    &__container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: var(--djui-component-auth-template-container--max-width-resolved, 20.5rem);
+      margin: var(--djui-component-auth-template-container--margin-resolved, 1rem);
+
+      @media (#{width-to(xsmall)}) {
+        --djui-component-auth-template-container--max-width-resolved: none;
+        --djui-component-auth-template-container--margin-resolved: 0;
+      }
+    }
+
+    &__main {
+      @include djui-surface-segmented(auth-template);
+      width: 100%;
+      flex: var(--djui-component-auth-template-main--flex-resolved, 0 1 auto);
+
+      @media (#{width-to(xsmall)}) {
+        --djui-component-auth-template-main--flex-resolved: 1;
+        --djui-component-auth-template--surface-radius: 0;
+        --djui-shadow-resolved: none;
+      }
+    }
+
+    &__inner {
+      @include djui-surface-layout(auth-template);
+      display: flex;
+      flex-direction: column;
+      @include djui-surface-corners;
+    }
+  }
+}

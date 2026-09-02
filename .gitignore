@@ -10,3 +10,5 @@ dist/
 # local working material, not part of the public repo
 *.pdf
 NOTES.md
+test-results/
+playwright-report/

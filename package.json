@@ -13,6 +13,10 @@
     "test": "pnpm -r test",
     "type-check": "pnpm -r type-check",
     "lint": "pnpm --filter @bordfodbold/app lint",
-    "theme:generate": "pnpm --filter @bordfodbold/ui theme:generate"
+    "theme:generate": "pnpm --filter @bordfodbold/ui theme:generate",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
   }
 }

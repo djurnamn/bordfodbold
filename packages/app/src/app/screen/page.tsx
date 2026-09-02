@@ -1,10 +1,10 @@
-import { Board } from "./board";
 import { TournamentProvider } from "@/store/provider";
+import { Screen } from "./screen";
 
-export default function BoardPage() {
+export default function ScreenPage() {
   return (
     <TournamentProvider>
-      <Board />
+      <Screen />
     </TournamentProvider>
   );
 }

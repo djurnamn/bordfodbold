@@ -71,9 +71,15 @@ export function TournamentProvider({ store: givenStore, fallback = null, childre
         setTournament(next);
       }
     });
-    store.load().then((loaded) => {
-      if (active) {
-        setTournament(loaded);
+    store.load().then(async (loaded) => {
+      if (!active) {
+        return;
+      }
+      setTournament(loaded);
+      // An admin who reloads stays unlocked for the tab's lifetime.
+      const remembered = readRememberedPin();
+      if (remembered !== null && (await store.unlock(remembered)) && active) {
+        setUnlocked(true);
       }
     });
     return () => {
@@ -105,11 +111,13 @@ export function TournamentProvider({ store: givenStore, fallback = null, childre
         const store = storeRef.current;
         const ok = store === null ? false : await store.unlock(pin);
         setUnlocked(ok);
+        rememberPin(ok ? pin : null);
         return ok;
       },
       lock: () => {
         storeRef.current?.lock();
         setUnlocked(false);
+        rememberPin(null);
       },
       setScore: (matchId, score) => run((store) => store.setScore(matchId, score)),
       undoLastChange: () => run((store) => store.undoLastChange()),
@@ -154,4 +162,26 @@ export function useStandings(): StandingRow[] {
 export function useTournamentCommands(): Pick<TournamentContextValue, "commands" | "unlocked" | "pending" | "error"> {
   const { commands, unlocked, pending, error } = useTournamentContext();
   return { commands, unlocked, pending, error };
+}
+
+const rememberedPinKey = "bordfodbold:admin-pin";
+
+function readRememberedPin(): string | null {
+  try {
+    return window.sessionStorage.getItem(rememberedPinKey);
+  } catch {
+    return null;
+  }
+}
+
+function rememberPin(pin: string | null): void {
+  try {
+    if (pin === null) {
+      window.sessionStorage.removeItem(rememberedPinKey);
+    } else {
+      window.sessionStorage.setItem(rememberedPinKey, pin);
+    }
+  } catch {
+    // Storage can be unavailable; the admin then re-enters the PIN on reload.
+  }
 }

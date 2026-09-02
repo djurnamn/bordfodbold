@@ -1,0 +1,55 @@
+@use "styles/mixins" as djui;
+
+.TeamList {
+  display: grid;
+  gap: 1rem;
+
+  &__teams {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  &__team {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "mark actions"
+      "members actions";
+    gap: 0.25rem 1rem;
+    align-items: center;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid djui.get(foreground, primary, 0.08);
+
+    > .TeamMark {
+      grid-area: mark;
+    }
+  }
+
+  &__members {
+    grid-area: members;
+    @include djui.djui-typography(small);
+    opacity: 0.7;
+    padding-left: 3.25rem;
+  }
+
+  &__teamActions {
+    grid-area: actions;
+    display: flex;
+    gap: 0.375rem;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  &__count {
+    @include djui.djui-typography(small);
+    opacity: 0.7;
+  }
+}

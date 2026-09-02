@@ -1,0 +1,165 @@
+@use "styles/mixins" as djui;
+
+// One screen, no scrolling. Type scales with the viewport width so the same
+// layout reads on a 1080p lunch-area display and a 4K wall.
+.Screen {
+  --screen-unit: clamp(0.875rem, 0.95vw, 1.75rem);
+  font-size: var(--screen-unit);
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 1.5em 2em;
+  display: grid;
+  gap: 1.25em;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, auto);
+  grid-template-areas:
+    "header header"
+    "standings plan"
+    "teams latest";
+  cursor: none;
+
+  &__header {
+    grid-area: header;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2em;
+  }
+
+  &__titles {
+    display: grid;
+    gap: 0.25em;
+  }
+
+  &__kicker {
+    @include djui.djui-typography(caption);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    opacity: 0.6;
+  }
+
+  &__title {
+    @include djui.djui-typography(title);
+    margin: 0;
+    font-size: 2.75em;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  &__leader {
+    display: grid;
+    gap: 0.25em;
+    justify-items: start;
+    padding: 0.75em 1.25em;
+    border-radius: 1em;
+    background: djui.get(accent, primary, 0.12);
+    font-size: 1.1em;
+  }
+
+  &__leaderLabel {
+    @include djui.djui-typography(caption);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    opacity: 0.7;
+  }
+
+  &__status {
+    display: grid;
+    gap: 0.25em;
+    justify-items: end;
+  }
+
+  &__clock {
+    @include djui.djui-typography(numeric, $include-font-size: false);
+    font-size: 2em;
+    line-height: 1;
+  }
+
+  &__panel {
+    @include djui.djui-surface;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0.75em;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+
+    &--standings {
+      grid-area: standings;
+    }
+    &--plan {
+      grid-area: plan;
+    }
+    &--teams {
+      grid-area: teams;
+    }
+    &--latest {
+      grid-area: latest;
+    }
+    &--next {
+      display: none;
+    }
+  }
+
+  &__heading {
+    @include djui.djui-typography(caption);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    opacity: 0.6;
+    margin: 0;
+  }
+
+  &__nextList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5em;
+  }
+
+  &__nextMatch {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+
+  &__versus {
+    opacity: 0.5;
+  }
+
+  &__done {
+    @include djui.djui-typography(body);
+    margin: 0;
+  }
+
+  // The still-to-play list earns its place on a wide screen: a fourth column
+  // in the lower row.
+  @media (min-aspect-ratio: 16/10) {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 3fr);
+    grid-template-areas:
+      "header header header"
+      "standings plan plan"
+      "teams latest next";
+
+    &__panel--next {
+      display: grid;
+    }
+  }
+
+  // Everything the screen composes reads at the screen's own scale.
+  .Leaderboard--compact,
+  .TournamentGrid--compact {
+    font-size: 1.15em;
+  }
+
+  .TeamLegend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5em 1em;
+  }
+
+  .ActivityFeed__entry {
+    padding-bottom: 0.35em;
+  }
+}

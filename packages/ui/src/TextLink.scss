@@ -1,0 +1,32 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+
+@layer djui.components {
+  .DjuiTextLink {
+    @include djui-text-link;
+
+    &--colored {
+      color: var(--djui-link-foreground-resolved, rgb(var(--djui-current-color-rgb)));
+
+      html[data-djui-mode="light"] & {
+        @include djui-hover {
+          --djui-link-foreground-resolved: rgb(var(--djui-current-color-dark-rgb));
+        }
+
+        &:active {
+          --djui-link-foreground-resolved: rgb(var(--djui-current-color-darker-rgb));
+        }
+      }
+
+      html[data-djui-mode="dark"] & {
+        @include djui-hover {
+          --djui-link-foreground-resolved: rgb(var(--djui-current-color-light-rgb));
+        }
+
+        &:active {
+          --djui-link-foreground-resolved: rgb(var(--djui-current-color-lighter-rgb));
+        }
+      }
+    }
+  }
+}

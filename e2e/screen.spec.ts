@@ -1,0 +1,58 @@
+import { expect, test, type Page } from "@playwright/test";
+
+const shots = process.env.E2E_SHOTS;
+
+async function enterPin(page: Page, pin: string) {
+  await page.getByLabel("Character 1 of 4").focus();
+  await page.keyboard.type(pin);
+}
+
+async function addTeam(page: Page, name: string, emblem: string) {
+  await page.getByRole("button", { name: "Add team" }).click();
+  await page.getByLabel("Team name").fill(name);
+  await page.getByLabel("Member 1").fill(`${name} one`);
+  await page.getByLabel("Member 2").fill(`${name} two`);
+  await page.getByRole("radio", { name: emblem }).click();
+  await page.getByRole("button", { name: "Add team" }).last().click();
+}
+
+test.use({ viewport: { width: 1920, height: 1080 } });
+
+test("the info screen fits eight teams on one 1080p screen without scrolling", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  });
+
+  await page.goto("/admin");
+  await enterPin(page, "1234");
+  await page.getByRole("tab", { name: "Teams" }).click();
+  await addTeam(page, "Kitchen Crew", "🍕");
+  await addTeam(page, "Night Shift", "🦊");
+  await expect(page.getByText("8 of 8 teams")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add team" })).toBeDisabled();
+
+  await page.goto("/screen");
+  await expect(page.getByRole("heading", { name: "Signifly Autumn Open" })).toBeVisible();
+  await expect(page.getByRole("table").first().getByRole("row")).toHaveCount(9);
+
+  // Nothing on the screen may scroll or clip: not the page, not a panel, not a
+  // scroll container inside one. Every element is checked.
+  const overflow = await page.evaluate(() => {
+    const root = document.scrollingElement!;
+    const clipped = [...document.querySelectorAll<HTMLElement>(".Screen, .Screen *")]
+      .filter((element) => element.scrollHeight > element.clientHeight + 1 || element.scrollWidth > element.clientWidth + 1)
+      .filter((element) => getComputedStyle(element).overflow !== "visible" || element.classList.contains("Screen"))
+      // A visually hidden element is a one-pixel box clipped on purpose.
+      .filter((element) => element.clientWidth > 1 && element.clientHeight > 1)
+      .map((element) => `${element.tagName.toLowerCase()}.${[...element.classList].join(".")}`);
+    return { page: root.scrollHeight > window.innerHeight, clipped };
+  });
+  expect(overflow.page, "the page scrolls").toBe(false);
+  expect(overflow.clipped, "something clips its content").toEqual([]);
+
+  if (shots) {
+    await page.screenshot({ path: `${shots}/screen-8-teams.png` });
+  }
+});

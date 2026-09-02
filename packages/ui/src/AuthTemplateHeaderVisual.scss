@@ -1,0 +1,87 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+
+@layer djui.components {
+  .DjuiAuthTemplateHeader {
+    &--nav-open, &[data-djui-state-nav-open] {
+      @include djui-offcanvas-open(auth-template-header);
+    }
+
+    &__navigation {
+      display: var(--djui-component-auth-template-header-navigation--display-resolved, block);
+      @include djui-offcanvas-panel(auth-template-header, $background: var(--djui-component-auth-template-header--navigation-background, rgb(var(--djui-next-surface-1-rgb))));
+
+      @media (#{width(small, medium)}) {
+        --djui-component-auth-template-header-navigation--display-resolved: contents;
+      }
+
+      @media (#{width(medium, large)}) {
+        --djui-component-auth-template-header-navigation--display-resolved: contents;
+      }
+
+      @media (#{width(large, xlarge)}) {
+        --djui-component-auth-template-header-navigation--display-resolved: contents;
+      }
+
+      @media (#{width-from(xlarge)}) {
+        --djui-component-auth-template-header-navigation--display-resolved: contents;
+      }
+    }
+
+    &__navigation-inner {
+      display: var(--djui-component-auth-template-header-navigation-inner--display-resolved, block);
+
+      @media (#{width(small, medium)}) {
+        --djui-component-auth-template-header-navigation-inner--display-resolved: contents;
+      }
+
+      @media (#{width(medium, large)}) {
+        --djui-component-auth-template-header-navigation-inner--display-resolved: contents;
+      }
+
+      @media (#{width(large, xlarge)}) {
+        --djui-component-auth-template-header-navigation-inner--display-resolved: contents;
+      }
+
+      @media (#{width-from(xlarge)}) {
+        --djui-component-auth-template-header-navigation-inner--display-resolved: contents;
+      }
+
+      @media (width-to(small)) {
+        overflow: auto;
+        height: 100%;
+      }
+    }
+
+    &__navigation-toggle {
+      display: var(--djui-component-auth-template-header-navigation-toggle--display-resolved, flex);
+      @include djui-offcanvas-toggle(auth-template-header);
+
+      @media (#{width(small, medium)}) {
+        --djui-component-auth-template-header-navigation-toggle--display-resolved: none;
+      }
+
+      @media (#{width(medium, large)}) {
+        --djui-component-auth-template-header-navigation-toggle--display-resolved: none;
+      }
+
+      @media (#{width(large, xlarge)}) {
+        --djui-component-auth-template-header-navigation-toggle--display-resolved: none;
+      }
+
+      @media (#{width-from(xlarge)}) {
+        --djui-component-auth-template-header-navigation-toggle--display-resolved: none;
+      }
+    }
+
+    &__navigation-toggle-face {
+      &--menu {
+        @include djui-offcanvas-toggle-face(auth-template-header, menu);
+      }
+
+      &--close {
+        @include djui-offcanvas-toggle-face(auth-template-header, close);
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+@use "styles/mixins" as djui;
+
+.Admin {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 1.25rem;
+  display: grid;
+  gap: 1.25rem;
+
+  @media (#{djui.width-from(medium)}) {
+    padding: 2rem;
+  }
+
+  &__panel {
+    @include djui.djui-surface;
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  &__help {
+    @include djui.djui-typography(small);
+    margin: 0;
+    opacity: 0.7;
+  }
+
+  &__toolbar {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  &__heading {
+    @include djui.djui-typography(caption);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.6;
+    margin: 0.5rem 0 0;
+  }
+}
