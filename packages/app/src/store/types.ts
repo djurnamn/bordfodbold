@@ -22,8 +22,10 @@ export interface TournamentStore {
   removeTeam(teamId: string): Promise<void>;
   updateSettings(settings: Partial<TournamentSettings>): Promise<void>;
   renameTournament(name: string): Promise<void>;
-  /** Back to the seed data. */
+  /** Clears the tournament: no teams, no results, the log emptied. */
   reset(): Promise<void>;
+  /** Replaces the tournament with the demo data. */
+  loadDemoData(): Promise<void>;
 }
 
 export class StoreLockedError extends Error {

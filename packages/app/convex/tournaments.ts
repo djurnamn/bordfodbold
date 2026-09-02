@@ -10,7 +10,7 @@ import {
 } from "@bordfodbold/domain";
 import { ConvexError, v } from "convex/values";
 
-import { seedTournament } from "../src/store/seed";
+import { emptyTournament, seedTournament } from "../src/store/seed";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { settingsValidator, teamValidator, tournamentFields } from "./schema";
 
@@ -79,7 +79,13 @@ export const renameTournament = mutation({
   handler: (ctx, args) => change(ctx, args, (tournament) => renameTournamentTo(tournament, args.name, now())),
 });
 
+/** Clears the tournament: no teams, no results, the log emptied. */
 export const reset = mutation({
+  args: { slug: v.string(), pin },
+  handler: (ctx, args) => change(ctx, args, () => emptyTournament(args.slug, now())),
+});
+
+export const loadDemoData = mutation({
   args: { slug: v.string(), pin },
   handler: (ctx, args) => change(ctx, args, () => withSlug(seedTournament(), args.slug)),
 });

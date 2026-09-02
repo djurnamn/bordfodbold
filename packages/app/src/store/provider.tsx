@@ -32,6 +32,7 @@ export interface TournamentCommands {
   updateSettings(settings: Partial<TournamentSettings>): Promise<void>;
   renameTournament(name: string): Promise<void>;
   reset(): Promise<void>;
+  loadDemoData(): Promise<void>;
 }
 
 interface TournamentContextValue {
@@ -126,6 +127,7 @@ export function TournamentProvider({ store: givenStore, fallback = null, childre
       updateSettings: (settings) => run((store) => store.updateSettings(settings)),
       renameTournament: (name) => run((store) => store.renameTournament(name)),
       reset: () => run((store) => store.reset()),
+      loadDemoData: () => run((store) => store.loadDemoData()),
     }),
     [run],
   );

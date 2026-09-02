@@ -14,11 +14,12 @@ interface SettingsFormProps {
   onRename: (name: string) => Promise<void>;
   onUpdateSettings: (settings: Partial<TournamentSettings>) => Promise<void>;
   onReset: () => Promise<void>;
+  onLoadDemoData: () => Promise<void>;
   onLock: () => void;
 }
 
 /** The tournament's name and rules, a reset to the demo data, and the lock. */
-export function SettingsForm({ tournament, pending, onRename, onUpdateSettings, onReset, onLock }: SettingsFormProps) {
+export function SettingsForm({ tournament, pending, onRename, onUpdateSettings, onReset, onLoadDemoData, onLock }: SettingsFormProps) {
   const bem = createBem("SettingsForm");
   const [name, setName] = useState(tournament.name);
   const [goalsToWin, setGoalsToWin] = useState<number | null>(tournament.settings.goalsToWin);
@@ -26,6 +27,7 @@ export function SettingsForm({ tournament, pending, onRename, onUpdateSettings, 
   const [legs, setLegs] = useState<Legs>(tournament.settings.legs);
   const [confirmingLegs, setConfirmingLegs] = useState(false);
   const [confirmingReset, setConfirmingReset] = useState(false);
+  const [confirmingDemo, setConfirmingDemo] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -97,9 +99,17 @@ export function SettingsForm({ tournament, pending, onRename, onUpdateSettings, 
       <div className={bem("danger")}>
         <div>
           <h3 className={bem("dangerTitle")}>Start over</h3>
-          <p className={bem("dangerText")}>Puts the demo tournament back: six teams and their results. Everything entered since is discarded.</p>
+          <p className={bem("dangerText")}>Clears the tournament: every team, result and log entry goes. The name and the rules stay.</p>
         </div>
-        <Button label="Reset to demo data" variant="soft" color="context-negative" onClick={() => setConfirmingReset(true)} disabled={pending} />
+        <Button label="Clear the tournament" variant="soft" color="context-negative" onClick={() => setConfirmingReset(true)} disabled={pending} />
+      </div>
+
+      <div className={bem("danger")}>
+        <div>
+          <h3 className={bem("dangerTitle")}>Demo data</h3>
+          <p className={bem("dangerText")}>Replaces the tournament with the demo: six teams and a handful of results.</p>
+        </div>
+        <Button label="Load demo data" variant="soft" onClick={() => setConfirmingDemo(true)} disabled={pending} />
       </div>
 
       <div className={bem("danger")}>
@@ -114,8 +124,12 @@ export function SettingsForm({ tournament, pending, onRename, onUpdateSettings, 
         Going back to one leg discards {discardedByLegs.length} recorded second-leg {discardedByLegs.length === 1 ? "result" : "results"}.
       </ConfirmDialog>
 
-      <ConfirmDialog open={confirmingReset} title="Reset to the demo data?" confirmLabel="Reset" destructive onCancel={() => setConfirmingReset(false)} onConfirm={async () => { setConfirmingReset(false); await onReset(); }}>
-        Every team, result and log entry entered since is discarded.
+      <ConfirmDialog open={confirmingReset} title="Clear the tournament?" confirmLabel="Clear" destructive onCancel={() => setConfirmingReset(false)} onConfirm={async () => { setConfirmingReset(false); await onReset(); }}>
+        Every team, result and log entry is discarded. This cannot be undone.
+      </ConfirmDialog>
+
+      <ConfirmDialog open={confirmingDemo} title="Load the demo data?" confirmLabel="Load" onCancel={() => setConfirmingDemo(false)} onConfirm={async () => { setConfirmingDemo(false); await onLoadDemoData(); }}>
+        The current teams, results and log are replaced by the demo tournament.
       </ConfirmDialog>
     </form>
   );

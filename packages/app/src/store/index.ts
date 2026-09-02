@@ -1,6 +1,6 @@
 import { ConvexStore } from "./convex-store";
 import { LocalStore } from "./local-store";
-import { seedTournament } from "./seed";
+import { emptyTournament, seedTournament } from "./seed";
 import type { TournamentStore } from "./types";
 
 export type { TournamentStore } from "./types";
@@ -40,6 +40,7 @@ export function createStore(): TournamentStore {
     storage: window.localStorage,
     channel: typeof BroadcastChannel === "undefined" ? undefined : new BroadcastChannel("bordfodbold"),
     seed: seedTournament,
+    empty: emptyTournament,
     pin: process.env.NEXT_PUBLIC_ADMIN_PIN ?? "1234",
   });
 }

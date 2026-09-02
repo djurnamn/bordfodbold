@@ -1,5 +1,17 @@
 import { applyScoreChange, createTournament, type Tournament } from "@bordfodbold/domain";
 
+/** A tournament with nothing in it: the state a reset leaves, and the first-run state without demo data. */
+export function emptyTournament(slug = "autumn-open", at: string = new Date().toISOString()): Tournament {
+  return createTournament({
+    id: `tournament-${slug}`,
+    slug,
+    name: "New tournament",
+    settings: { goalsToWin: 10, pointsPerWin: 3, legs: 1 },
+    teams: [],
+    at,
+  });
+}
+
 /**
  * The demo tournament: six teams, room for two more, a handful of results
  * so the leaderboard has something to say. Deterministic - ids and
@@ -39,7 +51,7 @@ export function seedTournament(): Tournament {
         (match.homeTeamId === away && match.awayTeamId === home),
     )?.id;
     if (matchId === undefined) {
-      throw new Error(`Seed names a pairing that is not scheduled: ${home} vs ${away}`);
+      throw new Error(`Seed names a pairing that is not scheduled: ${home} vs. ${away}`);
     }
     const oriented: [number, number] = matchId.startsWith(`${home}--`) ? score : [score[1], score[0]];
     tournament = applyScoreChange(tournament, matchId, oriented, {

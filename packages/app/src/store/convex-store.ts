@@ -85,6 +85,10 @@ export class ConvexStore implements TournamentStore {
     return this.run((pin) => this.client.mutation(api.tournaments.reset, { slug: this.slug, pin }));
   }
 
+  loadDemoData(): Promise<void> {
+    return this.run((pin) => this.client.mutation(api.tournaments.loadDemoData, { slug: this.slug, pin }));
+  }
+
   close(): void {
     void this.client.close();
   }

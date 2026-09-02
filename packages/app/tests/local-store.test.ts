@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { LocalStore, type Channel, type KeyValueStorage } from "../src/store/local-store";
-import { seedTournament } from "../src/store/seed";
+import { emptyTournament, seedTournament } from "../src/store/seed";
 import { StoreLockedError } from "../src/store/types";
 
 class MemoryStorage implements KeyValueStorage {
@@ -34,6 +34,7 @@ const options = (storage: KeyValueStorage, channel?: Channel) => ({
   storage,
   channel,
   seed: seedTournament,
+  empty: emptyTournament,
   pin: "1234",
   now: () => "2026-09-02T12:00:00.000Z",
   newId: () => `id-${(counter += 1)}`,
@@ -95,16 +96,18 @@ describe("LocalStore", () => {
     expect((await new LocalStore(options(storage)).load()).matches.find((match) => match.id === unplayed.id)?.homeScore).toBeNull();
   });
 
-  it("resets to the seed", async () => {
+  it("clears on reset and brings the demo back on request", async () => {
     const store = new LocalStore(options(new MemoryStorage()));
     const tournament = await store.load();
     await store.unlock("1234");
-    await store.removeTeam(tournament.teams[0]!.id);
-    await store.reset();
     let latest = tournament;
     store.subscribe((next) => (latest = next));
-    await store.renameTournament("Renamed");
+    await store.reset();
+    expect(latest.teams).toHaveLength(0);
+    expect(latest.matches).toHaveLength(0);
+    expect(latest.activity).toHaveLength(0);
+    expect(latest.slug).toBe(tournament.slug);
+    await store.loadDemoData();
     expect(latest.teams).toHaveLength(6);
-    expect(latest.name).toBe("Renamed");
   });
 });

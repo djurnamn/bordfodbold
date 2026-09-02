@@ -33,6 +33,7 @@ export interface LocalStoreOptions {
   /** A channel to other instances of the same page; omit for none. */
   channel?: Channel;
   seed: () => Tournament;
+  empty: (slug: string) => Tournament;
   pin: string;
   key?: string;
   now?: () => string;
@@ -118,6 +119,10 @@ export class LocalStore implements TournamentStore {
   }
 
   async reset(): Promise<void> {
+    await this.commit((tournament) => this.options.empty(tournament.slug));
+  }
+
+  async loadDemoData(): Promise<void> {
     await this.commit(() => this.options.seed());
   }
 
