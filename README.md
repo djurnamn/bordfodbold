@@ -4,6 +4,9 @@ A scoreboard for table foosball tournaments. A round-robin plan, a live
 leaderboard, an info-screen view, and an admin that pushes every result to
 every screen the moment it is entered.
 
+Live at [bordfodbold-nine.vercel.app](https://bordfodbold-nine.vercel.app/);
+the admin PIN for the demo is `1234`.
+
 Built for a Signifly case assignment. Built with AI tools, and I'm up front
 about that; the design decisions and the review of what came out are mine.
 

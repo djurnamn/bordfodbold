@@ -48,4 +48,7 @@ test("the info screen fits eight teams on one 1080p screen without scrolling", a
   if (shots) {
     await page.screenshot({ path: `${shots}/screen-8-teams.png` });
   }
+
+  // The tournament may be shared with real screens: leave it as found.
+  await resetTournament(page);
 });

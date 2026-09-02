@@ -86,4 +86,6 @@ test("teams and settings", async ({ page }) => {
   await page.getByRole("button", { name: "Save settings" }).click();
   await expect(page.getByText("Settings saved.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Friday Cup" })).toBeVisible();
+
+  await resetTournament(page);
 });
