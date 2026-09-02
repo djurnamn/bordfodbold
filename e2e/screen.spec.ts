@@ -7,8 +7,8 @@ const shots = process.env.E2E_SHOTS;
 async function addTeam(page: Page, name: string, emblem: string) {
   await page.getByRole("button", { name: "Add team" }).click();
   await page.getByLabel("Team name").fill(name);
-  await page.getByLabel("Member 1").fill(`${name} one`);
-  await page.getByLabel("Member 2").fill(`${name} two`);
+  await page.getByLabel("Member", { exact: true }).nth(0).fill(`${name} one`);
+  await page.getByLabel("Member", { exact: true }).nth(1).fill(`${name} two`);
   await page.getByRole("radio", { name: emblem }).click();
   await page.getByRole("button", { name: "Add team" }).last().click();
 }

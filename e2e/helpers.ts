@@ -9,8 +9,8 @@ export async function enterPin(page: Page, value: string = pin) {
 }
 
 /**
- * Puts the tournament back to the seed through the admin's own reset, so a
- * test starts from the same data whichever store the app runs on: the local
+ * Puts the demo tournament back through the admin's own "load demo data", so
+ * a test starts from the same data whichever store the app runs on: the local
  * store in this browser, or a shared Convex deployment.
  */
 export async function resetTournament(page: Page) {
@@ -22,8 +22,8 @@ export async function resetTournament(page: Page) {
   await enterPin(page);
   await expect(page.getByRole("tab", { name: "Results" })).toBeVisible();
   await page.getByRole("tab", { name: "Settings" }).click();
-  await page.getByRole("button", { name: "Reset to demo data" }).click();
-  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await page.getByRole("button", { name: "Load demo data" }).click();
+  await page.getByRole("button", { name: "Load", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Signifly Autumn Open" })).toBeVisible();
   await page.getByRole("button", { name: "Lock" }).first().click();
   await expect(page.getByRole("heading", { name: "Enter the PIN" })).toBeVisible();

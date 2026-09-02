@@ -48,8 +48,10 @@ test("a result entered in the admin shows on the board in another tab", async ({
   await shot(page, "score-dialog");
   await page.getByRole("button", { name: "Save result" }).click();
 
-  await expect(page.getByText(`${home} 10–4 ${away}`)).toBeVisible();
-  await expect(board.getByText(`${home} 10–4 ${away}`)).toBeVisible();
+  const feedRow = (target: Page, result: string) =>
+    target.getByRole("row").filter({ hasText: home }).filter({ hasText: away }).filter({ hasText: result }).first();
+  await expect(feedRow(page, "10–4")).toBeVisible();
+  await expect(feedRow(board, "10–4")).toBeVisible();
   await shot(board, "board-after-result");
 
   // Replacing needs a second confirmation.
@@ -58,11 +60,11 @@ test("a result entered in the admin shows on the board in another tab", async ({
   await page.getByRole("button", { name: "Save result" }).click();
   await expect(page.getByText("This replaces a recorded result")).toBeVisible();
   await page.getByRole("button", { name: "Replace result" }).click();
-  await expect(board.getByText(`${home} 10–7 ${away} (was 10–4)`)).toBeVisible();
+  await expect(feedRow(board, "10–7").filter({ hasText: "was 10–4" })).toBeVisible();
 
-  // Undo puts it back.
+  // Undo puts it back, as an undo entry.
   await page.getByRole("button", { name: "Undo last change" }).click();
-  await expect(board.getByText(`${home} 10–4 ${away} (was 10–7)`)).toBeVisible();
+  await expect(feedRow(board, "was 10–7").filter({ hasText: "Undo" })).toBeVisible();
 });
 
 test("teams and settings", async ({ page }) => {
@@ -73,7 +75,7 @@ test("teams and settings", async ({ page }) => {
 
   await page.getByRole("button", { name: "Add team" }).click();
   await page.getByLabel("Team name").fill("Kitchen Crew");
-  await page.getByLabel("Member 1").fill("Anders");
+  await page.getByLabel("Member", { exact: true }).nth(0).fill("Anders");
   await page.getByRole("radio", { name: "Aqua" }).click();
   await page.getByRole("radio", { name: "🍕" }).click();
   await shot(page, "team-dialog");
@@ -86,6 +88,15 @@ test("teams and settings", async ({ page }) => {
   await page.getByRole("button", { name: "Save settings" }).click();
   await expect(page.getByText("Settings saved.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Friday Cup" })).toBeVisible();
+
+  // Clearing leaves an empty tournament, and the board says so.
+  await page.getByRole("button", { name: "Clear the tournament" }).click();
+  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  await page.getByRole("tab", { name: "Teams" }).click();
+  await expect(page.getByText("No teams yet. Add the first one below.")).toBeVisible();
+  await page.goto("/");
+  await expect(page.getByText("No teams yet. Add them in the admin.")).toBeVisible();
+  await expect(page.getByText("No results entered yet.")).toBeVisible();
 
   await resetTournament(page);
 });
