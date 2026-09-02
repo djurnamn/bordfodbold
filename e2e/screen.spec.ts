@@ -1,11 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const shots = process.env.E2E_SHOTS;
+import { enterPin, resetTournament } from "./helpers";
 
-async function enterPin(page: Page, pin: string) {
-  await page.getByLabel("Character 1 of 4").focus();
-  await page.keyboard.type(pin);
-}
+const shots = process.env.E2E_SHOTS;
 
 async function addTeam(page: Page, name: string, emblem: string) {
   await page.getByRole("button", { name: "Add team" }).click();
@@ -19,14 +16,10 @@ async function addTeam(page: Page, name: string, emblem: string) {
 test.use({ viewport: { width: 1920, height: 1080 } });
 
 test("the info screen fits eight teams on one 1080p screen without scrolling", async ({ page }) => {
-  await page.goto("/");
-  await page.evaluate(() => {
-    window.localStorage.clear();
-    window.sessionStorage.clear();
-  });
+  await resetTournament(page);
 
   await page.goto("/admin");
-  await enterPin(page, "1234");
+  await enterPin(page);
   await page.getByRole("tab", { name: "Teams" }).click();
   await addTeam(page, "Kitchen Crew", "🍕");
   await addTeam(page, "Night Shift", "🦊");

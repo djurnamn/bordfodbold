@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { enterPin, resetTournament } from "./helpers";
+
 const shots = process.env.E2E_SHOTS;
 const shot = async (page: Page, name: string) => {
   if (shots) {
@@ -7,19 +9,8 @@ const shot = async (page: Page, name: string) => {
   }
 };
 
-/** Types a PIN into the pin input: focus the first cell, then the digits. */
-async function enterPin(page: Page, pin: string) {
-  await page.getByLabel("Character 1 of 4").focus();
-  await page.keyboard.type(pin);
-}
-
 test.beforeEach(async ({ page }) => {
-  // A clean tournament per test: the local store seeds on an empty storage.
-  await page.goto("/");
-  await page.evaluate(() => {
-    window.localStorage.clear();
-    window.sessionStorage.clear();
-  });
+  await resetTournament(page);
 });
 
 test("a wrong PIN is refused, the right one opens the admin", async ({ page }) => {
