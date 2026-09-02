@@ -1,12 +1,10 @@
-import { Button, Typography } from "@bordfodbold/ui";
+import { TournamentProvider } from "@/store/provider";
+import { BoardPreview } from "./board-preview";
 
 export default function BoardPage() {
   return (
-    <main>
-      <Typography tag="h1" variant="title">
-        Bordfodbold
-      </Typography>
-      <Button label="Scaffold works" />
-    </main>
+    <TournamentProvider>
+      <BoardPreview />
+    </TournamentProvider>
   );
 }
