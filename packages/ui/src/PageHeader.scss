@@ -1,0 +1,21 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/typography" as *;
+
+@layer djui.components {
+  .DjuiPageHeader {
+    &__inner {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    &__title {
+      @include djui-typography(title);
+    }
+
+    &__description {
+      @include djui-typography(body);
+    }
+  }
+}

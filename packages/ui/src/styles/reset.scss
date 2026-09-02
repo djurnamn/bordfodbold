@@ -1,0 +1,311 @@
+@use "layer-order";
+
+// The element reset — djui's weakest layer, deliberately. Layered, it can be as
+// aggressive as the philosophy wants without a component ever having to
+// out-specify it, and a consumer's own unlayered CSS still beats all of it.
+//
+// THE BRIEF: reset browser defaults very aggressively, so that every style is
+// deliberate, is as consistent across engines as possible, and no element
+// surprises you with styles you did not write.
+//
+// WHY THERE IS NO `all:` HERE, so it is not proposed again. `the-new-css-reset`
+// ships thirteen documented walk-backs from one `all: unset`, and the ones that
+// bit were behavioural. Two facts settle it on their own:
+//
+//   • `display`'s initial value is `inline`, so `all: initial|unset` makes
+//     `<script>`, `<style>`, `<title>` and `<head>` **render their text on the
+//     page**. It is the single most visible failure of a naive `all` reset.
+//   • `all: unset` on a `<button>` silently drops the UA's `user-select: none`,
+//     turning a drag into a text selection — a behaviour change, not a cosmetic
+//     one.
+//
+// `revert` is anti-reset (it restores the UA), and `revert-layer` from the first
+// layer falls through to the UA too, so neither is a bounded rollback. What
+// works is an explicit property list, which is what this is.
+//
+// AND WHY THERE IS NO DISPLAY MAP. An `all:` reset has to restate one, because
+// it flattens `display` on every element. This rule never touches `display`, so
+// the UA's map is intact and restating ~60 selectors would change nothing
+// observable — a large sheet asserting what the browser already does. The three
+// rules below that *do* concern `display` are the ones that carry their own
+// weight, and each says why.
+@layer djui.reset {
+  // ─── The universal rule ───────────────────────────────────────────────────
+  //
+  // An explicit property list. Three properties that belong to this shape are
+  // deliberately absent, and must stay absent:
+  //
+  //   • `outline` — stripping it unconditionally is a flat SC 2.4.7 failure.
+  //     All three engines now scope their own ring to `:focus-visible`, so the
+  //     historical reason for stripping it is gone. A control that wants a
+  //     different ring declares one (`djui-focus-ring`); a control that declares
+  //     nothing keeps the UA's, which is the correct default rather than a bug.
+  //   • `appearance` — it has real accessibility costs and must be scoped to
+  //     the controls that are actually restyled. Measured in Chromium 1234 and
+  //     Firefox 1538 (`internal/reset-research/preflight-open-items-check.mjs`):
+  //     `appearance: none` collapses a checkbox from 13×13 / 14×14 to **0×0** in
+  //     both. Any rule that uses it MUST state a size, or it produces a control
+  //     that is focusable, operable and invisible.
+  //   • `white-space` — a universal `white-space: inherit` destroys `<pre>` and
+  //     `<textarea>`. Not setting it at all is the cheapest way to be right.
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    // `0 solid` rather than `none`, so a component that later wants an edge sets
+    // a width alone. This is the house preference and the reason the compiled
+    // sheet carries zero-width `border-style` declarations.
+    border: 0 solid;
+    border-radius: 0;
+    // One declaration kills family, size, style, weight, stretch and
+    // line-height. It is also what makes `html`'s own type load-bearing: with
+    // this in place every element's type comes from the page canvas by
+    // inheritance, which is why `page.scss` states a `line-height` explicitly
+    // rather than leaving the document on whatever the font happens to say.
+    font: inherit;
+    color: inherit;
+    // `none`, not `transparent`, and the spelling matters for a reason that has
+    // nothing to do with CSS semantics: both are the `background` shorthand and
+    // both leave every longhand at its initial value — including
+    // `background-color: transparent` — so the computed result is identical. But
+    // Sass's compressed output normalises the keyword `transparent` to
+    // `rgba(0,0,0,0)`, and the preflight compiles once for **every** theme, so
+    // `style-entries.test.ts` holds it to carrying no literal colour at all.
+    // Spelling it `none` keeps that guard absolutely strict rather than needing
+    // an exception carved into it.
+    background: none;
+    vertical-align: baseline;
+    text-align: inherit;
+    text-indent: 0;
+    text-decoration: none;
+    // `inherit`, NOT `none` — and the difference is not cosmetic. The canonical
+    // hard-reset recipe writes `text-transform: none` here, which neutralises
+    // the UA at the root *and* severs the property's inheritance at every
+    // element below it. djui relies on that inheritance: the `label` type ramp
+    // sets `text-transform: uppercase` on a container and its parts inherit it,
+    // so a hard `none` silently un-capitalised `Accordion`'s title (measured, in
+    // a browser — no test saw it). `inherit` neutralises just as completely,
+    // because the chain terminates at `html`, which inherits from nothing and so
+    // resolves to `none` anyway.
+    text-transform: inherit;
+    letter-spacing: inherit;
+    word-spacing: inherit;
+    list-style: none;
+    // The brief's aggressive choice, taken deliberately. `cursor` already
+    // inherits, so this changes exactly one class of thing: it neutralises the
+    // affordances the UA hands out on its own — chiefly the hand on links, which
+    // Chromium sets via `a { cursor: pointer }` and Gecko via `ua.css`. The
+    // chain terminates at `html`, which inherits from nothing and so resolves to
+    // `auto` — and `auto` is context-sensitive, so a text I-beam still appears
+    // over text and over `<input>`/`<textarea>` without a rule restating it.
+    //
+    // `auto` is ALSO what makes WebKit's hit-test give links a hand, so this rule
+    // alone would leave Safari disagreeing with the other two. The link rule
+    // below is the answer — and it CLAIMS the slot declared here rather than
+    // declaring `cursor` a second time, so the reset stays exactly one tier for
+    // this property. §3.3's invariant applies to the reset as much as to a
+    // component; without the slot, every `<a>` in the kit went to depth 4.
+    //
+    // Every djui control that wants a pointer declares one: `Button`,
+    // `TextLink`, `Surface`, `SurfaceCell`, `Select`, `Menu`, `Table`'s sortable
+    // header, `NumberInput`, `ModeSwitch`, `DocsTemplateHeader` and the toast
+    // controls. A bare `<button>` or `<a>` in consumer markup gets no opinion
+    // from djui, which is the intent.
+    --djui-cursor-reset-resolved: initial;
+    cursor: var(--djui-cursor-reset-resolved, inherit);
+    // Flex and grid items floor at `min-content` rather than zero, which is the
+    // usual reason a long word or a wide table refuses to let its container
+    // shrink. Neither is a UA *rule* — they are initial values — but they
+    // surprise people constantly, which is the brief's own test.
+    min-width: 0;
+    min-height: 0;
+  }
+
+  // ─── What the universal rule flattens, and where it comes back ────────────
+  //
+  // `font: inherit` + `text-decoration: none` + `vertical-align: baseline` +
+  // `background: none` between them flatten the text-level semantics:
+  // `<strong>`, `<em>`, `<sup>`, `<sub>`, `<mark>`, `<abbr>`, `<code>`, `<pre>`,
+  // `<s>`, `<u>`, `<ins>` and the h1–h6 size ladder all render as body text.
+  // (`<q>`'s quotation marks survive — nothing here touches `content`.)
+  //
+  // **This is deliberate**, and the rule behind it is djui's, not a compromise:
+  // an element carrying meaning visually either **carries its own BEM class and
+  // is styled as a component part**, or it is **formatting-bearing content and
+  // belongs in inline markdown** — `djui-wysiwyg-content($inline: true)` is that
+  // route and already exists. No default styles reach these elements otherwise,
+  // including inside djui's own slots.
+  //
+  // For the prose route, the restoration lives in one place:
+  // `djui-wysiwyg-content`, which styles the prose surfaces where arbitrary
+  // author HTML actually appears (`@djui/markdown`, `@djui/mdxeditor`,
+  // `Separator`'s content). Outside prose, a semantic element carries its
+  // meaning in the DOM — where assistive technology reads it — and carries no
+  // appearance djui did not ask for.
+  //
+  // The cost, stated rather than buried: a **consumer's own** `<strong>` — in
+  // their application chrome, and equally inside a djui slot such as a Table
+  // cell or a Notice — renders indistinguishably from body text until it takes
+  // one of the two routes above. That is the trade, and it is why the preflight
+  // is opt-in and ships separately from `djui/css`.
+  //
+  // The one exception is `<summary>`'s marker, restored below: it is an
+  // affordance rather than formatting. The distinction is the whole rule.
+
+  html {
+    // Prevents iOS Safari inflating type on orientation change. Not a reset of
+    // anything the UA sheet does — the UA has no rule for it — but the same kind
+    // of statement: a surprise removed.
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100vh;
+  }
+
+  // An author preference, not a UA restatement: replaced elements are `inline`
+  // by initial value and every engine agrees. Making them blocks kills the
+  // inline baseline gap under an image, which is the single most common
+  // "mystery 4px" in any layout.
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  // `input, button, textarea, select { outline: none }` used to live here. It is
+  // gone: it was a page-wide SC 2.4.7 failure, removing the focus indicator from
+  // every control djui does not own. See the universal rule's note on `outline`.
+
+  // `button { cursor: pointer }` used to live here too, and is now the universal
+  // `cursor: inherit` above — same outcome, stated once for every element rather
+  // than for one tag.
+
+  // The one element rule the universal `cursor: inherit` cannot cover.
+  //
+  // `inherit` terminates at `html`, which inherits from nothing and so resolves
+  // to `auto` — and `auto` is precisely the value that makes WebKit's hit-test
+  // give links a hand. So the universal rule alone produces an arrow on links in
+  // Chromium and Gecko and a hand in Safari: a cross-engine divergence the reset
+  // would have CREATED, which is the opposite of the brief's first goal.
+  // `default` is the one spelling the prior-art survey found that suppresses the
+  // hand in every engine.
+  //
+  // It reaches bare consumer markup only: every link djui draws — `TextLink`,
+  // `Breadcrumbs__link`, the prose `djui-link` — declares `cursor: pointer` in a
+  // later layer and still wins.
+  a:any-link {
+    --djui-cursor-reset-resolved: default;
+  }
+
+  // The `<summary>` marker is restored where the rest of the text-level
+  // semantics deliberately are not, and the distinction is worth stating: those
+  // are FORMATTING, and djui's rule is that formatting either carries its own
+  // BEM class or arrives as inline markdown. This is an AFFORDANCE — the only
+  // thing that says a `<details>` opens. Removing it leaves a control that is
+  // fully operable and gives no sign it can be used, which is the same class of
+  // failure as stripping a focus ring, not the same class as an unbolded
+  // `<strong>`. `list-style: none` in the universal rule above takes it out
+  // (measured: a 16.9px marker box to 0), so it comes back by name.
+  // `list-style-position` is restated alongside the type, and it is the half that
+  // actually makes the triangle visible. The UA gives `<summary>` `inside`; both
+  // the universal `list-style: none` above and a `list-style: disclosure-closed`
+  // shorthand here reset it to `outside`, and an outside marker with the
+  // universal `padding: 0` draws beyond the box's left edge — computed style says
+  // `disclosure-closed` while the rendered marker measures 0px. Longhands, so
+  // each half is deliberate.
+  summary {
+    list-style-type: disclosure-closed;
+    list-style-position: inside;
+  }
+
+  details[open] > summary {
+    list-style-type: disclosure-open;
+  }
+
+  // Positioning the UA gives these and the universal `margin: 0` takes away.
+  //
+  // Unlike the display half — which this reset never touches, so the UA's rules
+  // stand — `dialog { margin: auto }` and `[popover] { margin: auto }` ARE
+  // overridden by the universal rule, and a modal dialog then paints in the
+  // top-left corner instead of centred (measured: (0,0) against (381,331)).
+  // That is a broken dialog rather than an unstyled one, so the centring is
+  // restated rather than left as the consumer's problem.
+  dialog:modal,
+  [popover]:popover-open {
+    margin: auto;
+  }
+
+  fieldset {
+    // The one `<fieldset>` rule the universal rule cannot cover: the UA gives it
+    // a `min-inline-size: min-content` that makes a fieldset refuse to shrink,
+    // and it is not expressible as a zeroed box property.
+    min-inline-size: 0;
+  }
+
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    overflow-wrap: break-word;
+  }
+
+  // ─── Why there is no `[hidden]` rule ──────────────────────────────────────
+  //
+  // `[hidden]`, `dialog:not([open])` and `[popover]:not(:popover-open)` are weak
+  // UA `display: none` rules, and an aggressive reset is normally expected to
+  // restate them. This one does not, and the reason is the same as for the
+  // display map: **it never touches `display`**, so those three UA rules are
+  // exactly as intact as they were before djui loaded. (Their POSITIONING is a
+  // different matter — the universal `margin: 0` does reach that, which is why
+  // the centring is restated above.)
+  //
+  // Restating `[hidden]` is the tempting one, because the UA rule really is weak
+  // — any author `display` beats it. But the only spelling that fixes that is
+  // `display: none !important`, and an `!important` inside `@layer djui.reset`
+  // is the worst possible place for one: **important declarations reverse layer
+  // order**, so djui's weakest layer would become the strongest thing it emits
+  // and would outrank *a consumer's own unlayered `!important`*. The consumer
+  // could not win on their own document. `djui.overrides` is not an escape
+  // either — it ships empty on purpose, as the consumer's seam and
+  // `revert-layer`'s target, so djui putting rules in it breaks the contract
+  // that makes it useful.
+  //
+  // So the UA keeps this job, the sheet keeps zero `!important`, and
+  // `style-entries.test.ts` keeps holding that at zero as a guarantee about who
+  // can win rather than as tidiness.
+
+  // ─── Two traps, commented here because they are silent ────────────────────
+  //
+  // 1. **Do not add a `scrollbar-color` line to `:root`.** One such declaration
+  //    disables every `::-webkit-scrollbar` rule in Chrome 121+. It will look
+  //    exactly as though those rules were deleted, with nothing to point at.
+  //    The two mechanisms are mutually exclusive; pick one per document.
+  //
+  // 2. **Vendor pseudo-elements can never share a selector list.** One
+  //    unrecognised pseudo invalidates the whole rule, so `::-webkit-…` and
+  //    `::-moz-…` need duplicated blocks — for range, progress, meter and the
+  //    file button. A single combined rule silently styles neither.
+  //
+  // Two more that belong to components rather than to this file, recorded so the
+  // reset is not blamed for them:
+  //
+  // 3. **`prefers-reduced-motion` (DJUI-019) has no blanket guard here** — and
+  //    must not get one. The usual `* { animation-duration: 0.01ms !important }`
+  //    would *freeze* the Spinner, which then conveys nothing at all; the fix is
+  //    a non-rotating branch in the component. A blanket guard would also be the
+  //    only `!important` in the shipped sheet bar `[hidden]`, which a convention
+  //    test holds at zero.
+  // 4. **`forced-colors` (DJUI-020)** is not reset work either. Forced colors
+  //    repaints colour but not geometry, so the failure is a state signalled by
+  //    background alone going invisible — which each state has to answer with a
+  //    non-colour cue.
+}

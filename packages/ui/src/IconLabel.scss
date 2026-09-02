@@ -1,0 +1,24 @@
+@layer djui.components {
+  .DjuiIconLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--djui-component-icon-label--gap, 0.5em);
+    font-size: var(--djui-component-icon-label--label-size, 1em);
+
+    &__icon {
+      display: inline-flex;
+      align-items: center;
+      --djui-component-icon--size: var(--djui-component-icon-label--icon-size, 1em);
+    }
+
+    &__label {
+      font-weight: var(--djui-current-typography-font-weight);
+      line-height: var(--djui-current-typography-line-height);
+      letter-spacing: var(--djui-current-typography-letter-spacing);
+      text-transform: var(--djui-current-typography-text-transform);
+      font-family: var(--djui-current-typography-font-family);
+      white-space: var(--djui-current-typography-white-space);
+      font-variant-numeric: var(--djui-current-typography-font-variant-numeric);
+    }
+  }
+}

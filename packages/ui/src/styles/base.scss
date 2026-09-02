@@ -1,0 +1,89 @@
+@use "sass:meta";
+@use "styles/color" as color;
+@use "styles/helpers" as helpers;
+@use "layer-order";
+
+// `djui-config` is loaded with `meta.load-css` rather than `@use`, and that is
+// load-bearing: a module `@use`d before a layer block emits its CSS OUTSIDE the
+// layer, silently. The whole config emission — tokens, mode blocks and the
+// surface cascade's flat rules and `@scope` donuts alike — has to land in this
+// one layer together. Layers outrank scope proximity, so splitting the surface
+// cascade across two of them inverts its result rather than breaking loudly.
+@layer djui.base {
+  @include meta.load-css("djui-config");
+
+  // Bring in the config-generated CSS custom properties (colors, surfaces,
+  // mode blocks — all derived from a djui config). The "djui-config"
+  // indirection lets consumers swap in their own generated output by
+  // providing a `djui-config.scss` earlier on the sass loadPath — see
+  // `src/djui-config.scss` for the contract.
+
+  // The breakpoint functions (and the bands themselves, via the
+  // `djui-breakpoints` seam) come from helpers — this file previously carried
+  // its own `large`-only copy of the map + `width-from`, kept in sync by hand.
+
+  // This is djui's BASE layer: everything a component needs in order to render —
+  // the config-generated tokens, the mode blocks, `@font-face`, the structural
+  // variables, the shared icon sizing and the one keyframe. It touches no bare
+  // element selector, so it is safe inside a document djui does not own.
+  //
+  // The page canvas — djui's typeface, ink and backdrop stated on `html` — used to
+  // sit in the middle of this file and now lives in `page.scss`, which ships with
+  // the preflight. The line between them is whether the rule is opt-in: the
+  // `color-scheme` blocks below only match `html[data-djui-mode="…"]`, and
+  // stamping that attribute is already the consumer's opt-in, whereas a bare
+  // `html` rule restyles a host's own body text whether they asked or not.
+
+  // ─── Structural variables ───
+  //
+  // None are declared here any more: every structural token is a config knob
+  // emitted with the config above. Box-shadows are `config.shadows`
+  // (`--djui-shadow-<name>` + parsed parts, read by the `djui-shadow` mixin);
+  // the dashboard shell's navigation width and frame inset are
+  // `components.DashboardTemplate`. A token restated in this file after the
+  // config load sits later in the same layer, so a theme's value for it could
+  // never win — the shape that made `navigationWidth` a dead knob.
+
+  // ─── Colour mode ───
+  //
+  // Tell the browser our current colour mode so native widgets — scrollbars,
+  // form-control accents, the `<input type="date">` picker glyph — render in
+  // mode-appropriate colours instead of always using the system default (which is
+  // "light" on most desktops, hence the black date icon on dark surfaces in
+  // Chrome). Guarded by the attribute, so it applies only where a consumer has
+  // opted in by stamping the mode — which is why it belongs to the base layer
+  // rather than the page canvas.
+  html[data-djui-mode="light"] {
+    color-scheme: light;
+  }
+
+  html[data-djui-mode="dark"] {
+    color-scheme: dark;
+  }
+
+  // ─── Icons ───
+  //
+  // One sizing mechanism for every icon, regardless of source: the fallback icon
+  // Visuals and any `@djui/lucide` icon (its wrapper also stamps `DjuiIcon`).
+  // Icons size in rem via `--djui-component-icon--size` (config default `Icon.size`, or an
+  // instance `size` prop set inline); the stroke is a fixed user-unit width over
+  // the 24-unit viewBox, so it scales with the rendered size, and is tunable via
+  // `--djui-component-icon--stroke-width` (config `Icon.strokeWidth` / a `strokeWidth` prop).
+  .DjuiIcon {
+    display: block;
+    width: var(--djui-component-icon--size, 1.5rem);
+    height: var(--djui-component-icon--size, 1.5rem);
+    stroke-width: var(--djui-component-icon--stroke-width, 1.5);
+  }
+
+  // ─── Animations ───
+
+  @keyframes djui-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}

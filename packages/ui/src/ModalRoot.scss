@@ -1,0 +1,44 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/color" as color;
+
+@layer djui.components {
+  .DjuiModalRoot {
+    display: contents;
+
+    &--placement-center {
+      --djui-component-modal-root--justify-resolved: center;
+    }
+
+    &__overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: var(--djui-layer-modal);
+      background: color.get(surface, 1, 0.5);
+    }
+
+    &__positioner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: var(--djui-component-modal-root--justify-resolved, flex-start);
+      z-index: var(--djui-layer-modal);
+      --djui-component-modal-root--offset-resolved: initial;
+      --djui-component-modal-root--gutter-resolved: initial;
+      padding: var(--djui-component-modal-root--offset-resolved, var(--djui-component-modal--offset, 4rem)) var(--djui-component-modal-root--gutter-resolved, var(--djui-component-modal--gutter, 2rem));
+
+      @media (width-to(small)) {
+        --djui-component-modal-root--offset-resolved: var(--djui-component-modal--offset-small, 1rem);
+        --djui-component-modal-root--gutter-resolved: var(--djui-component-modal--gutter-small, 0.5rem);
+      }
+    }
+  }
+}

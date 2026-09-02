@@ -1,0 +1,12 @@
+node_modules/
+.next/
+dist/
+.turbo/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+# local working material, not part of the public repo
+*.pdf
+NOTES.md

@@ -1,0 +1,10 @@
+// djui's mixin / function API — the helpers, color, and typography utilities a
+// consumer `@use`s to author their own styles with djui tokens. Emits no CSS.
+//
+// Named `_mixins` (a partial) rather than `_index` so it never shadows the
+// emitting `index.scss` when a consumer resolves `@use "styles"` by loadPath:
+// reach these via `@use "djui/styles/mixins" as *`, and the full stylesheet via
+// `@use "djui/styles"`.
+@forward "helpers";
+@forward "color";
+@forward "typography";

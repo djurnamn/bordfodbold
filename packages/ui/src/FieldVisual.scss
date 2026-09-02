@@ -1,0 +1,64 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/color" as color;
+@use "styles/typography" as *;
+
+@layer djui.components {
+  .DjuiField {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    &__label {
+      display: block;
+      padding-left: 0.5rem;
+      line-height: 1;
+      @include djui-typography(label);
+    }
+
+    &__message-prefix {
+      @include djui-visually-hidden;
+    }
+
+    &__message {
+      padding-left: 0.5rem;
+      @include djui-typography(caption);
+    }
+
+    &--error &__message {
+      color: color.get(context, negative);
+    }
+
+    &__description {
+      padding-left: 0.5rem;
+      @include djui-typography(caption);
+      color: rgba(var(--djui-foreground-primary-rgb), 0.65);
+    }
+
+    &--floating {
+      gap: 0;
+      padding-top: var(--djui-component-field--floating-top-padding, 0);
+    }
+
+    &--floating.DjuiField--reserve-label {
+      padding-top: var(--djui-component-field--floating-top-padding, 0.5rem);
+    }
+
+    &--floating &__label {
+      @include djui-floating-label;
+    }
+
+    &--floating &__message {
+      margin-top: 0.5rem;
+    }
+
+    &--floating &__description {
+      margin-top: 0.5rem;
+    }
+
+    &--error {
+      --djui-component-group-form--ring-width-claim: 0.125rem;
+      --djui-component-group-form--ring-color-claim: rgb(var(--djui-context-negative-rgb));
+    }
+  }
+}

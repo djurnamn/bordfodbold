@@ -1,0 +1,59 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+
+@layer djui.components {
+  .DjuiSurface {
+    @include djui-focus-ring-style;
+    --djui-background-resolved: initial;
+    background-color: var(--djui-background-resolved, rgb(var(--djui-current-surface-rgb)));
+    border-radius: djui-surface-radius();
+    padding: djui-surface-padding();
+    box-shadow: var(--djui-surface-bevel-shadows, 0 0 0 transparent), var(--djui-surface-elevation-shadow, var(--djui-shadow-default));
+    @include djui-radius-inherit;
+
+    &--interactive {
+      cursor: pointer;
+      @include djui-hover {
+        --djui-background-resolved: rgb(var(--djui-current-surface-hover-rgb));
+      }
+
+      &:has(:focus-visible) {
+        @include djui-focus-ring-claim;
+      }
+    }
+
+    &--segmented {
+      --djui-background-resolved: initial;
+      background-color: var(--djui-background-resolved, rgb(var(--djui-surface-1-rgb)));
+      padding: 0;
+    }
+
+    &--flush {
+      padding: 0;
+    }
+
+    &--square {
+      border-radius: 0;
+    }
+
+    &--flat {
+      --djui-surface-elevation-shadow: 0 0 0 transparent;
+    }
+
+    &--elevation-overlay {
+      --djui-surface-elevation-shadow: var(--djui-shadow-overlay);
+    }
+
+    &--elevation-heavy {
+      --djui-surface-elevation-shadow: var(--djui-shadow-heavy);
+    }
+
+    &--border {
+      border: #{djui-separator-width()} solid rgb(var(--djui-surface-border-color-rgb, var(--djui-surface-1-rgb)));
+    }
+
+    &--bevel {
+      --djui-surface-bevel-shadows: inset 0 #{djui-separator-width()} 0 var(--djui-surface-bevel-light, rgba(255, 255, 255, 0.08)), inset 0 calc(#{djui-separator-width()} * -1) 0 var(--djui-surface-bevel-dark, rgba(0, 0, 0, 0.25));
+    }
+  }
+}

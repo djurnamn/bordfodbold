@@ -1,0 +1,42 @@
+@use "styles/layer-order";
+@use "styles/typography" as *;
+
+@layer djui.components {
+  .DjuiTypography {
+    &--title {
+      @include djui-typography(title);
+    }
+
+    &--heading {
+      @include djui-typography(heading);
+    }
+
+    &--subheading {
+      @include djui-typography(subheading);
+    }
+
+    &--label {
+      @include djui-typography(label);
+    }
+
+    &--body {
+      @include djui-typography(body);
+    }
+
+    &--small {
+      @include djui-typography(small);
+    }
+
+    &--caption {
+      @include djui-typography(caption);
+    }
+
+    &--numeric {
+      @include djui-typography(numeric);
+    }
+
+    &--code {
+      @include djui-typography(code);
+    }
+  }
+}

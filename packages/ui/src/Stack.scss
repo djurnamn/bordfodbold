@@ -1,0 +1,51 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+
+@layer djui.components {
+  .DjuiStack {
+    --djui-component-stack--direction-resolved: var(--djui-component-stack--direction, column);
+    --djui-component-stack--align-resolved: var(--djui-component-stack--align, stretch);
+
+    @media (#{width-to(xsmall)}) {
+      --djui-component-stack--direction-resolved: var(--djui-component-stack--direction-xsmall, var(--djui-component-stack--direction, column));
+      --djui-component-stack--align-resolved: var(--djui-component-stack--align-xsmall, var(--djui-component-stack--align, stretch));
+    }
+
+    @media (#{width(xsmall, small)}) {
+      --djui-component-stack--direction-resolved: var(--djui-component-stack--direction-small, var(--djui-component-stack--direction, column));
+      --djui-component-stack--align-resolved: var(--djui-component-stack--align-small, var(--djui-component-stack--align, stretch));
+    }
+
+    @media (#{width(small, medium)}) {
+      --djui-component-stack--direction-resolved: var(--djui-component-stack--direction-medium, var(--djui-component-stack--direction, column));
+      --djui-component-stack--align-resolved: var(--djui-component-stack--align-medium, var(--djui-component-stack--align, stretch));
+    }
+
+    @media (#{width(medium, large)}) {
+      --djui-component-stack--direction-resolved: var(--djui-component-stack--direction-large, var(--djui-component-stack--direction, column));
+      --djui-component-stack--align-resolved: var(--djui-component-stack--align-large, var(--djui-component-stack--align, stretch));
+    }
+
+    @media (#{width(large, xlarge)}) {
+      --djui-component-stack--direction-resolved: var(--djui-component-stack--direction-xlarge, var(--djui-component-stack--direction, column));
+      --djui-component-stack--align-resolved: var(--djui-component-stack--align-xlarge, var(--djui-component-stack--align, stretch));
+    }
+
+    @media (#{width-from(xlarge)}) {
+      --djui-component-stack--direction-resolved: var(--djui-component-stack--direction-xlarge, var(--djui-component-stack--direction, column));
+      --djui-component-stack--align-resolved: var(--djui-component-stack--align-xlarge, var(--djui-component-stack--align, stretch));
+    }
+
+    & {
+      display: flex;
+      flex-direction: var(--djui-component-stack--direction-resolved);
+      align-items: var(--djui-component-stack--align-resolved);
+      justify-content: var(--djui-component-stack--justify, flex-start);
+      gap: var(--djui-component-stack--gap, var(--djui-component-group-layout--gutter, 1rem));
+    }
+
+    &--wrap {
+      flex-wrap: wrap;
+    }
+  }
+}

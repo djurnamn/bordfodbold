@@ -1,0 +1,18 @@
+{
+  "name": "bordfodbold",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Foosball tournament scoreboard: a round-robin plan, a live leaderboard, and an admin that pushes results to every screen.",
+  "packageManager": "pnpm@11.3.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @bordfodbold/app dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "type-check": "pnpm -r type-check",
+    "lint": "pnpm --filter @bordfodbold/app lint",
+    "theme:generate": "pnpm --filter @bordfodbold/ui theme:generate"
+  }
+}

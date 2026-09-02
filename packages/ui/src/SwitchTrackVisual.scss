@@ -1,0 +1,44 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/color" as color;
+
+@layer djui.components {
+  .DjuiSwitchTrack {
+    @include djui-focus-ring-style($offset: null, $color: rgb(var(--djui-component-group-form--color-focus-rgb)), $family: "form");
+    --djui-component-switch--track-width-resolved: var(--djui-component-switch--track-width, calc(var(--djui-component-switch--size, var(--djui-component-group-form--size, 1.5rem)) * 1.75));
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    width: var(--djui-component-switch--track-width-resolved);
+    height: var(--djui-component-switch--size, var(--djui-component-group-form--size, 1.5rem));
+    padding: 0.125rem;
+    border-radius: 999px;
+    --djui-background-resolved: initial;
+    background-color: var(--djui-background-resolved, rgb(var(--djui-component-group-form--color-input-background-rgb)));
+
+    &__thumb {
+      width: calc(var(--djui-component-switch--size, var(--djui-component-group-form--size, 1.5rem)) - 0.25rem);
+      height: calc(var(--djui-component-switch--size, var(--djui-component-group-form--size, 1.5rem)) - 0.25rem);
+      border-radius: 50%;
+      --djui-thumb-background-resolved: initial;
+      background-color: var(--djui-thumb-background-resolved, rgb(var(--djui-next-surface-3-rgb)));
+    }
+
+    &--checked {
+      --djui-background-resolved: rgb(var(--djui-current-color-rgb));
+    }
+
+    &--checked &__thumb {
+      --djui-thumb-background-resolved: rgb(var(--djui-current-color-contrast-rgb, var(--djui-current-surface-rgb)));
+      transform: translateX(calc(var(--djui-component-switch--track-width-resolved) - var(--djui-component-switch--size, var(--djui-component-group-form--size, 1.5rem))));
+    }
+
+    &--neutral, &--neutral#{&}--checked {
+      --djui-background-resolved: rgb(var(--djui-previous-surface-2-rgb));
+    }
+
+    &--neutral &__thumb, &--neutral#{&}--checked &__thumb {
+      --djui-thumb-background-resolved: rgb(var(--djui-next-surface-2-rgb));
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@bordfodbold/app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "type-check": "tsc --noEmit",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy"
+  },
+  "dependencies": {
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "@bordfodbold/domain": "workspace:*",
+    "@bordfodbold/ui": "workspace:*",
+    "convex": "^1.27.0",
+    "use-bem": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
+    "typescript": "^5",
+    "sass": "^1.90.0"
+  },
+  "description": "The Bordfodbold scoreboard: board, info-screen mode, and admin."
+}

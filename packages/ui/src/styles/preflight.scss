@@ -1,0 +1,18 @@
+// djui's page opinions, opt-in: the element reset and the page canvas.
+//
+// Both halves say the same thing — *djui owns this document* — which is why they
+// ship together and separately from `index.scss`. The reset states what every
+// element looks like before a component says anything; the canvas states the
+// typeface, ink and backdrop on `html`. They sit in different cascade layers all
+// the same: the reset is the weakest thing djui emits, while the canvas is a
+// base-layer statement of what the theme says the page is.
+//
+// Take this beside `djui/css` in a greenfield app (or take `djui/css/full`,
+// which is the two concatenated). Leave it out when embedding djui into an
+// application that already has its own reset and its own page canvas: the
+// components stand on their own without it.
+//
+// Deliberately theme-independent. Every value here is a `var()` reference rather
+// than a resolved colour, so one compiled artifact serves every theme.
+@use "reset";
+@use "page";

@@ -1,0 +1,148 @@
+@use "sass:color" as sasscolor;
+@use "sass:list";
+@use "sass:math";
+@use "sass:meta";
+
+/// Define a color as RGB CSS custom property.
+/// @param {Color} $hex - The color value
+/// @param {String} $args... - Variable name segments (e.g. accent, primary)
+/// Produces: --djui-{args joined by dash}-rgb: R, G, B;
+@mixin define($hex, $args...) {
+  $red: sasscolor.channel($hex, "red", $space: rgb);
+  $green: sasscolor.channel($hex, "green", $space: rgb);
+  $blue: sasscolor.channel($hex, "blue", $space: rgb);
+
+  $name: "";
+  @each $segment in $args {
+    @if $name == "" {
+      $name: "#{$segment}";
+    } @else {
+      $name: "#{$name}-#{$segment}";
+    }
+  }
+
+  --djui-#{$name}-rgb: #{$red}, #{$green}, #{$blue};
+}
+
+/// Define lightness variations of a color.
+/// @param {Color} $hex - The base color
+/// @param {String} $scope - Scope name (e.g. accent)
+/// @param {String} $name - Color name (e.g. primary)
+/// @param {String} $type - "lighten" or "darken"
+/// @param {Number} $steps - Number of variations
+/// @param {Number} $amount [5%] - Scaling amount per step
+@mixin define-variations($hex, $scope, $name, $type, $steps, $amount: 5%) {
+  $light-names: (light, lighter, lightest);
+  $dark-names: (dark, darker, darkest);
+
+  @if ($type == "lighten") {
+    @for $i from 1 through $steps {
+      $lighter: sasscolor.scale($hex, $lightness: $i * $amount);
+      $suffix: "";
+      @if $i <= 3 { $suffix: list.nth($light-names, $i); }
+      @else { $suffix: "light-#{$i}"; }
+      @include define($lighter, $scope, "#{$name}-#{$suffix}");
+    }
+  }
+
+  @if ($type == "darken") {
+    @for $i from 1 through $steps {
+      $darker: sasscolor.scale($hex, $lightness: -($i * $amount));
+      $suffix: "";
+      @if $i <= 3 { $suffix: list.nth($dark-names, $i); }
+      @else { $suffix: "dark-#{$i}"; }
+      @include define($darker, $scope, "#{$name}-#{$suffix}");
+    }
+  }
+}
+
+/// Generate a surface level palette by blending between two colors.
+/// @param {Color} $from - The starting color (level 1)
+/// @param {Color} $to - The ending color (last level)
+/// @param {Number} $levels [8] - Number of levels to generate
+/// @param {Number} $light-steps [0] - Number of lighter sub-variations per level
+/// @param {Number} $dark-steps [0] - Number of darker sub-variations per level
+/// @param {Number} $variation-amount [3%] - Lightness shift per sub-variation step
+@mixin define-surface-levels($from, $to, $levels: 8, $light-steps: 0, $dark-steps: 0, $variation-amount: 3%) {
+  $light-names: (light, lighter, lightest);
+  $dark-names: (dark, darker, darkest);
+
+  @for $i from 1 through $levels {
+    $t: 0;
+    @if $levels > 1 {
+      $t: math.div($i - 1, $levels - 1);
+    }
+
+    $level-color: sasscolor.mix($to, $from, $t * 100%);
+    @include define($level-color, surface, $i);
+
+    // Light sub-variations
+    @if $light-steps > 0 {
+      @for $j from 1 through $light-steps {
+        $lighter: sasscolor.scale($level-color, $lightness: $j * $variation-amount);
+        $suffix: "";
+        @if $j <= 3 { $suffix: list.nth($light-names, $j); }
+        @else { $suffix: "light-#{$j}"; }
+        @include define($lighter, surface, "#{$i}-#{$suffix}");
+      }
+    }
+
+    // Dark sub-variations
+    @if $dark-steps > 0 {
+      @for $j from 1 through $dark-steps {
+        $darker: sasscolor.scale($level-color, $lightness: -($j * $variation-amount));
+        $suffix: "";
+        @if $j <= 3 { $suffix: list.nth($dark-names, $j); }
+        @else { $suffix: "dark-#{$j}"; }
+        @include define($darker, surface, "#{$i}-#{$suffix}");
+      }
+    }
+  }
+}
+
+/// Retrieve a color as rgb() or rgba().
+///
+/// Signatures:
+///   get(scope)                        → rgb(var(--djui-{scope}-rgb))
+///   get(scope, name)                  → rgb(var(--djui-{scope}-{name}-rgb))
+///   get(scope, name, alpha)           → rgba(..., alpha)  [alpha is a number]
+///   get(scope, name, variation)       → rgb(var(--djui-{scope}-{name}-{variation}-rgb))
+///   get(scope, name, variation, alpha)→ rgba(..., alpha)
+@function get($scope, $name: null, $third: null, $fourth: null, $step: null) {
+  // `$step`: an alpha as a number of `--djui-alpha-unit`s (see helpers.scss,
+  // "Alpha") — the kit's way to say a muted colour without typing a decimal.
+  @if $step != null {
+    $var: "#{$scope}";
+    @if $name != null { $var: "#{$var}-#{$name}"; }
+    @if $third != null and meta.type-of($third) != "number" { $var: "#{$var}-#{$third}"; }
+    @return rgba(var(--djui-#{$var}-rgb), calc((#{$step}) * var(--djui-alpha-unit, 0.0625)));
+  }
+  // Build the variable name
+  $var-name: "#{$scope}";
+  @if $name != null {
+    $var-name: "#{$var-name}-#{$name}";
+  }
+
+  // Determine variation and alpha from $third/$fourth
+  $alpha: null;
+
+  @if $third != null {
+    @if meta.type-of($third) == "number" {
+      // Third arg is alpha
+      $alpha: $third;
+    } @else {
+      // Third arg is variation name
+      $var-name: "#{$var-name}-#{$third}";
+
+      @if $fourth != null {
+        $alpha: $fourth;
+      }
+    }
+  }
+
+  @if $alpha != null and $alpha < 1 {
+    @return rgba(var(--djui-#{$var-name}-rgb), $alpha);
+  }
+
+  @return rgb(var(--djui-#{$var-name}-rgb));
+}

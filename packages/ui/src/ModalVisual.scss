@@ -1,0 +1,76 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+
+@layer djui.components {
+  .DjuiModal {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: var(--djui-component-modal--width-resolved, #{djui-breakpoint(small)});
+    --djui-component-modal--height-resolved: initial;
+    height: var(--djui-component-modal--height-resolved, auto);
+    max-height: 100%;
+    border-radius: 0.5rem;
+    background: rgb(var(--djui-current-surface-rgb));
+    box-shadow: var(--djui-shadow-heavy);
+
+    &--width-xsmall {
+      --djui-component-modal--width-resolved: #{djui-breakpoint(xsmall)};
+    }
+
+    &--width-small {
+      --djui-component-modal--width-resolved: #{djui-breakpoint(small)};
+    }
+
+    &--width-medium {
+      --djui-component-modal--width-resolved: #{djui-breakpoint(medium)};
+    }
+
+    &--width-large {
+      --djui-component-modal--width-resolved: #{djui-breakpoint(large)};
+    }
+
+    &--width-xlarge {
+      --djui-component-modal--width-resolved: #{djui-breakpoint(xlarge)};
+    }
+
+    &--fill-height {
+      --djui-component-modal--height-resolved: 100%;
+    }
+
+    &__close-button {
+      position: absolute;
+      bottom: 100%;
+      left: 100%;
+      width: max-content;
+      transform: translate(-50%, 50%);
+      z-index: 1;
+
+      & button {
+        @include djui-native-control-type;
+        @include djui-native-control-box;
+        display: inline-flex;
+        padding: 0;
+        cursor: pointer;
+        @include djui-focus-ring;
+      }
+    }
+
+    &__inner {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      overscroll-behavior: contain;
+      border-radius: inherit;
+      padding: 1rem;
+    }
+
+    &__actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+    }
+  }
+}

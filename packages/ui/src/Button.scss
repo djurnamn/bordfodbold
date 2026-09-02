@@ -1,0 +1,52 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/color" as color;
+@use "styles/typography" as *;
+
+@layer djui.components {
+  .DjuiButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    height: var(--djui-component-button--height, auto);
+    padding: 0.375em var(--djui-component-button--padding-x, 0.625em);
+    border-radius: var(--djui-component-button--radius, 0.5em);
+    box-shadow: var(--djui-component-button--elevation, none);
+    font-size: var(--djui-component-button--size);
+    color: color.get(foreground, primary);
+    --djui-component-icon-label--label-size: var(--djui-component-button--label-size, 1em);
+    white-space: nowrap;
+    @include djui-native-control-type($font-size: null, $color: null);
+    @include djui-native-control-box($background: null);
+    @include djui-background-modifiers($kind: interactive, $accepts-hatched: true, $accepts-surface: true, $component: "button");
+
+    &--icon-only {
+      height: var(--djui-component-button--height, 2em);
+      min-width: var(--djui-component-button--height, 2em);
+      padding-inline: 0;
+      justify-content: center;
+      --djui-component-icon-label--label-size: 1em;
+    }
+
+    &--square {
+      --djui-component-button--radius: 0;
+    }
+
+    &--radius-inherit {
+      border-radius: inherit;
+    }
+
+    &--rounded {
+      border-radius: 999px;
+    }
+
+    &--interactive {
+      @include djui-disabled-slots($cursor: pointer);
+      @include djui-focus-ring;
+
+      &:disabled {
+        @include djui-disabled-claim();
+      }
+    }
+  }
+}

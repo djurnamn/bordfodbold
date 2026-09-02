@@ -1,0 +1,57 @@
+/**
+ * Typography reader.
+ *
+ * The type ramp lives as per-name token bundles in the generated config
+ * (`--djui-typography-<name>-<channel>`, emitted from `config.typography` — the
+ * same open, theme-named token shape as shadows). This mixin is the static reader:
+ * it interpolates the variant name into those tokens, the typographic twin of
+ * `djui-shadow($name)`. Runtime binding (a variant named by a prop, e.g.
+ * IconLabel's `labelTypography`) rides the `tokenSeam` helper instead.
+ *
+ * `$unit` picks the `font-size` basis — `1em` (default, tracks the ancestor's
+ * size) or `1rem` (absolute). font-size is stored **unitless** in the token, so
+ * the basis is chosen here, never baked in. `$include-font-size: false` applies
+ * the voice only (case / weight / tracking / family), leaving size to the caller
+ * — the label-on-a-sized-control case.
+ *
+ * A variant that omits a channel emits no token for it, so that channel's `var()`
+ * is undefined → invalid-at-computed-value → the property falls through to its
+ * cascaded value (an inherited property inherits; a non-inherited one — e.g.
+ * `text-decoration` — takes its initial). So a fresh element sees exactly what an
+ * omitted declaration would give it — and a variant with no font-size inherits
+ * its size for free ("voice, not size").
+ *
+ * The channel list is the complete voice a variant can declare, so a theme never
+ * needs to fork this reader to reach a property it set on a variant: alongside
+ * the core voice it reads `font-style`, `text-decoration`, and `color`. `color`
+ * is opt-in — the color system is the usual home for ink, but a theme that bakes
+ * a muted role color onto, say, `subheading`/`body` (a `--djui-typography-<name>-
+ * color` token) has it applied here rather than reaching into component internals.
+ * It rides at the end, so a same-rule `color` declared *after* an `@include
+ * djui-typography(...)` still wins by source order.
+ *
+ * `font-weight` reads the shared cue slot first. A state that would otherwise be
+ * carried by colour alone — a selected tab, the current page — claims
+ * `--djui-cue-weight-resolved` and the text under it thickens, which is the
+ * cheapest non-colour cue there is and the one channel that survives greyscale,
+ * a colour-vision deficiency and forced-colors alike. Unlike the state slots
+ * (`--djui-background-resolved` and friends) this one is **deliberately inherited**
+ * and is never re-declared `initial` per element: the emphasis is meant to reach
+ * the text inside the box that claims it, which is usually a composed child
+ * (an `IconLabel`'s label, a menu row's link) rather than the box itself.
+ */
+@mixin djui-typography($name, $unit: 1em, $include-font-size: true) {
+  @if $include-font-size {
+    font-size: calc(var(--djui-typography-#{$name}-font-size) * #{$unit});
+  }
+  font-weight: var(--djui-cue-weight-resolved, var(--djui-typography-#{$name}-font-weight));
+  line-height: var(--djui-typography-#{$name}-line-height);
+  letter-spacing: var(--djui-typography-#{$name}-letter-spacing);
+  text-transform: var(--djui-typography-#{$name}-text-transform);
+  font-family: var(--djui-typography-#{$name}-font-family);
+  white-space: var(--djui-typography-#{$name}-white-space);
+  font-variant-numeric: var(--djui-typography-#{$name}-font-variant-numeric);
+  font-style: var(--djui-typography-#{$name}-font-style);
+  text-decoration: var(--djui-typography-#{$name}-text-decoration);
+  color: var(--djui-typography-#{$name}-color);
+}

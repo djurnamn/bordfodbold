@@ -1,0 +1,13 @@
+// Indirection layer between `styles/helpers.scss` and the generated
+// breakpoints map — the breakpoints twin of `djui-config.scss`.
+//
+// `helpers.scss` does `@use "djui-breakpoints"`. Because this file is NOT next
+// to `helpers.scss` (it lives one directory up), sass can't resolve it relative
+// to the importer and instead falls back to loadPaths — the seam consumers use
+// to swap in their own bands (a custom `djui-breakpoints.scss` earlier on the
+// loadPath, `@forward`ing their own generated `breakpoints.scss`).
+//
+// A separate seam from `djui-config.scss` on purpose: the config partial
+// carries CSS rules, and helpers is `@use`d by every per-component stylesheet —
+// forwarding a map-only partial keeps the per-component compiles CSS-free.
+@forward "styles/generated/breakpoints";

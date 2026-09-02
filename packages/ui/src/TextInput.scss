@@ -1,0 +1,29 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+
+@layer djui.components {
+  .DjuiTextInput {
+    @include djui-input-base;
+    @include djui-radius-inherit;
+
+    &--non-interactive {
+      --djui-background-resolved: rgb(var(--djui-component-group-form--color-input-background-non-interactive-rgb, var(--djui-component-group-form--color-input-background-rgb)));
+      line-height: djui-form-control-height("text-input");
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    &--placeholder {
+      color: rgba(var(--djui-foreground-primary-rgb), 0.5);
+    }
+
+    &--square {
+      --djui-component-text-input--radius: 0;
+    }
+
+    &--padding-inherit {
+      @include djui-input-padding-inherit("text-input");
+    }
+  }
+}

@@ -1,0 +1,90 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/color" as color;
+@use "styles/typography" as *;
+
+@layer djui.components {
+  .DjuiSwitch {
+    @include djui-default-color(foreground, primary);
+    display: inline-flex;
+    font-size: var(--djui-component-switch--size, var(--djui-component-group-form--size, 1.5rem));
+    align-items: center;
+    gap: 0.5rem;
+    @include djui-disabled-slots($cursor: pointer);
+
+    &:has(.DjuiSwitch__description) {
+      align-items: flex-start;
+    }
+
+    &--bare {
+      cursor: inherit;
+    }
+
+    &--disabled {
+      @include djui-disabled-claim();
+    }
+
+    &__control {
+      position: relative;
+      display: inline-flex;
+      flex: 0 0 auto;
+    }
+
+    &__input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      cursor: inherit;
+    }
+
+    &:not(&--bare):has(> &__input:focus-visible) {
+      --djui-component-group-form--ring-width-claim: 0.125rem;
+    }
+
+    &--error {
+      --djui-component-group-form--ring-width-claim: 0.125rem;
+      --djui-component-group-form--ring-color-claim: rgb(var(--djui-context-negative-rgb));
+    }
+
+    &__label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      --djui-component-icon--size: 1rem;
+
+      &:empty {
+        display: none;
+      }
+
+      &:has(.DjuiSwitch__description) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.125rem;
+      }
+    }
+
+    &--changes-with-state:not(&--checked) &__label--end {
+      display: none;
+    }
+
+    &--changes-with-state#{&}--checked &__label--start {
+      display: none;
+    }
+
+    &__inline-label {
+      @include djui-control-label;
+    }
+
+    &:has(.DjuiSwitch__description) &__inline-label {
+      text-box-trim: none;
+    }
+
+    &__description {
+      @include djui-typography(small);
+      opacity: 0.7;
+    }
+  }
+}

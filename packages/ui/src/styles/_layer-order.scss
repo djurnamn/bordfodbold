@@ -1,0 +1,25 @@
+// djui's cascade layers, declared in one place.
+//
+// **Layer order is fixed by first declaration**, not by where the rules land — so
+// this statement has to reach the browser before any djui rule does, whichever
+// entry the consumer took and in whatever order their bundler concatenates. Every
+// layer partial `@use`s this module, and Sass loads a module once per
+// compilation, so the statement is emitted exactly once, at the top of the
+// artifact, for free.
+//
+// Without it, a consumer importing `djui/css/components/Button` before the base
+// would have `djui.components` declared first and the cascade would run
+// backwards — components losing to the reset — which is the kind of failure that
+// looks like a styling bug and isn't.
+//
+//   reset      the aggressive element reset. Deliberately the WEAKEST layer, so
+//              it can be as aggressive as it likes without a component ever
+//              having to out-specify it.
+//   base       the config tokens, `@font-face`, the mode blocks, the page canvas.
+//   components every component rule.
+//   overrides  ships empty. The consumer's seam, and `revert-layer`'s target.
+//
+// Unlayered CSS beats every layer, so a consumer's own stylesheet still wins by
+// default. A consumer who wants djui below their own layers restates the order
+// with djui first: `@layer djui, theme, base, components, utilities;`
+@layer djui.reset, djui.base, djui.components, djui.overrides;

@@ -1,0 +1,2131 @@
+@use "sass:map";
+@use "sass:math";
+@use "styles/color" as color;
+@use "styles/typography" as *;
+@use "djui-breakpoints" as djui-breakpoints;
+
+/**
+ * Variables
+ */
+
+// The responsive bands come from the config (`breakpoints`) through the
+// generated map (the `djui-breakpoints` loadPath seam — a map-only partial,
+// so per-component compiles stay CSS-free). Re-declared here so it remains a
+// public member of this module (`@use "djui/styles/mixins"`).
+$djui-breakpoints: djui-breakpoints.$djui-breakpoints;
+
+// The BREAKPOINTS djui's own components name through `width-from` / `width-to` /
+// `width` — points on the axis, not the ranges between them. (The ranges are
+// "bands", and they are named for their upper breakpoint, which is a distinction
+// worth keeping straight: band `medium` is the range that ENDS at breakpoint
+// `medium`, so it is the range above breakpoint `small`.)
+//
+// A theme may add breakpoints, but omitting one a component relies on would
+// silently emit `min-width: calc(null + 1px)` (a `map.get` miss is `null`, not an
+// error) — so assert the contract up front, where every per-component compile
+// runs it, rather than shipping broken media queries. `xlarge` joined the list
+// when the responsive helpers started emitting `width(large, xlarge)` and
+// `width-from(xlarge)` for every banded property.
+$djui-required-breakpoints: (xsmall, small, medium, large, xlarge);
+@each $breakpoint in $djui-required-breakpoints {
+  @if not map.has-key($djui-breakpoints, $breakpoint) {
+    @error "djui breakpoints contract: required breakpoint `#{$breakpoint}` is missing from the `breakpoints` config (djui components depend on it). Declared breakpoints: #{map.keys($djui-breakpoints)}.";
+  }
+}
+
+/**
+ * Functions
+ */
+
+@function width-from($name) {
+  @return "min-width: " + calc(#{map.get($djui-breakpoints, $name)} + 1px);
+}
+
+@function width-to($name) {
+  @return "max-width: " + map.get($djui-breakpoints, $name);
+}
+
+/// The configured breakpoint length itself — for a component whose own box is
+/// stated in the band vocabulary (Modal's window widths), so one config scale
+/// serves both. A `small` window is exactly as wide as the viewport where the
+/// `small` band ends.
+@function djui-breakpoint($name) {
+  @if not map.has-key($djui-breakpoints, $name) {
+    @error "djui breakpoints contract: `#{$name}` is not a declared breakpoint. Declared: #{map.keys($djui-breakpoints)}.";
+  }
+
+  @return map.get($djui-breakpoints, $name);
+}
+
+@function width($from-name, $to-name) {
+  @return "min-width: " + calc(#{map.get($djui-breakpoints, $from-name)} + 1px) +
+    ") and (max-width: " + map.get($djui-breakpoints, $to-name);
+}
+
+/**
+ * Interaction
+ */
+
+/// Wrap hover styles so they only apply on devices that support hover, and to
+/// controls that can actually be interacted with.
+///
+/// Avoids the double-tap issue on touch devices. The disabled exclusion is the
+/// other half: a disabled control must not paint a hover state, and until now
+/// nothing said so — `pointer-events: none` on the disabled rules was
+/// suppressing hover as a side effect, while also making the `cursor:
+/// not-allowed` beside it undisplayable (hit-testing passes to the parent, so
+/// the user saw the parent's cursor). Stating the exclusion here lets those
+/// rules keep their cursor.
+///
+/// `:where()` so the guard costs no specificity — this excludes a match, it does
+/// not win one — and `:disabled` never matches a non-form element, so wrapping
+/// every caller is safe. A component whose disabled state is a modifier class
+/// rather than the attribute (FileUpload's dropzone) is not covered and keeps
+/// its own arrangement.
+@mixin djui-hover {
+  @media (hover: hover) {
+    &:where(:not(:disabled)):hover {
+      @content;
+    }
+  }
+}
+
+/**
+ * Focus ring
+ *
+ * The library-wide keyboard-focus indicator. Every interactive component shows
+ * a visible ring — the reset strips the UA outline, so a component without one
+ * of these mixins has NO focus indication.
+ */
+
+/// The unavailable look, declared on the element that shows it — the dim and the
+/// cursor — so a disabled state assigns rather than redeclares.
+///
+/// `$cursor` is the element's RESTING cursor, kept as the declaration's fallback
+/// so nothing about the enabled state changes. It defaults to `inherit` rather
+/// than to a value: `cursor` is an inherited property and the kit leans on that
+/// (a checkbox's hidden input takes its affordance from the label around it), so
+/// a hard neutral would sever a chain that currently works.
+///
+/// `opacity` has a real neutral and takes one.
+@mixin djui-disabled-slots($cursor: inherit) {
+  --djui-dim-resolved: initial;
+  --djui-cursor-resolved: initial;
+  opacity: var(--djui-dim-resolved, 1);
+  cursor: var(--djui-cursor-resolved, #{$cursor});
+}
+
+/// Claim it from a disabled rule.
+@mixin djui-disabled-claim($dim: 0.5, $cursor: not-allowed) {
+  --djui-dim-resolved: #{$dim};
+  --djui-cursor-resolved: #{$cursor};
+}
+
+/// Declare the ring on the element that SHOWS it — once, in its base block.
+///
+/// No rule declares `outline` anywhere in the kit any more; states claim it.
+/// Two rules declaring one property on one element are settled by assembly
+/// order, which is not a decision — that is how focusing an invalid field used
+/// to hide its error outline. With the property declared once and every state
+/// assigning a slot instead, the collision cannot be written.
+///
+/// `$color` is a full colour value (not a triple), so a call site can pass a
+/// scoped token: form controls pass the form family's focus colour.
+///
+/// `$offset` paints the ring outside the element (default `0.125rem`); pass a
+/// negative offset (inset) where an outset ring would be clipped or collide — a
+/// full-bleed cell in a boxed layout (ToolbarButton, Table sort headers) or an
+/// item inside a scroll container (Tabs). `null` omits `outline-offset`.
+///
+/// The resting sentinel is a zero WIDTH, never a transparent colour: under
+/// `forced-colors` a transparent outline is repainted in a system colour, which
+/// would leave a permanent ring on every control in high-contrast mode. A zero
+/// width paints nothing there either.
+/// `$family` opens the one inherited claim channel a ringed control accepts.
+///
+/// The private `-resolved` slots are re-declared `initial` on every ringed
+/// element *specifically to firewall inheritance* (see below), so a composer
+/// cannot ring its child by setting those from outside — deliberately. But a
+/// `Field` in error has to ring whichever control it holds, and reaching into
+/// the control to claim its slots is exactly the anti-pattern this kit forbids.
+///
+/// The resolution is §3.5's: private slots stay firewalled, and ONE named family
+/// channel is the deliberate opening. A control that passes `$family: "form"`
+/// reads `--djui-component-group-form--ring-{width,color}-claim` **beneath** its
+/// own private slot, so an ancestor may claim the family ring by assigning those
+/// on ITS OWN element and letting them inherit. Nothing reaches in.
+///
+/// The ordering is what preserves DJUI-012. `djui-focus-ring-claim` sets the
+/// WIDTH only, so a focused invalid control takes its width from the private
+/// slot and its colour from the family channel — it rings, and it rings in the
+/// error colour rather than turning accent.
+@mixin djui-focus-ring-style($offset: 0.125rem, $color: null, $family: null) {
+  @if $color == null {
+    $color: rgb(var(--djui-focus-ring-color-rgb, var(--djui-accent-default-rgb)));
+  }
+
+  $width-fallback: 0;
+  $color-fallback: $color;
+  @if $family {
+    $width-fallback: var(--djui-component-group-#{$family}--ring-width-claim, 0);
+    $color-fallback: var(--djui-component-group-#{$family}--ring-color-claim, #{$color});
+  }
+
+  // Re-declared per ringed element so an ancestor that has claimed its own ring
+  // cannot leak the width or the colour down into this one — custom properties
+  // inherit, and `initial` makes a slot guaranteed-invalid so `var()` takes the
+  // fallback beside it. The family channel above is the one exception, and it is
+  // read from the fallback position rather than from these slots.
+  --djui-ring-width-resolved: initial;
+  --djui-ring-color-resolved: initial;
+
+  outline: var(--djui-ring-width-resolved, #{$width-fallback}) solid
+    var(--djui-ring-color-resolved, #{$color-fallback});
+
+  @if $offset != null {
+    outline-offset: $offset;
+  }
+}
+
+/// Claim the ring from a state block. Emits an assignment, never a declaration,
+/// so it composes with any other state that wants the same ring — an invalid
+/// field claims width AND colour, a focused one claims width alone.
+@mixin djui-focus-ring-claim {
+  --djui-ring-width-resolved: 0.125rem;
+}
+
+/// The usual form: declare the ring here, and claim it under the keyboard-focus
+/// selector. `$selector` is `focus-visible` (default — everything) or `focus`
+/// (text-entry controls, where a focused field always shows it).
+///
+/// Where the focused element and the ringed element differ (Checkbox/Radio's
+/// `__input:focus-visible + __box`, Switch's track, a Menu's highlighted item),
+/// the two halves are used separately: `djui-focus-ring-style` on whatever shows
+/// the ring, `djui-focus-ring-claim` under the selector that triggers it.
+@mixin djui-focus-ring($selector: focus-visible, $offset: 0.125rem, $color: null, $family: null) {
+  @include djui-focus-ring-style($offset, $color, $family);
+
+  &:#{$selector} {
+    @include djui-focus-ring-claim;
+  }
+}
+
+/**
+ * The surface system (DESIGN-SURFACES.md)
+ *
+ * A surface renders in one of two forms. A PLAIN surface is a single
+ * container — fill one step above its context, radius, elevation, padding.
+ * A SEGMENTED surface divides itself into cells across three elements:
+ *
+ *   .MySurface          { @include djui-surface-segmented; }  // the frame
+ *   .MySurface__layout  { @include djui-surface-layout(my-surface);
+ *                         @include djui-surface-corners($columns); }
+ *   .MySurface__cell    { @include djui-surface-cell; }
+ *
+ * The separators between cells are the frame's base fill showing through the
+ * layout gaps — drawn lines, not gaps in a physical stack: the base fill is
+ * absolute (`surface-1`), so the lines keep full contrast at any nesting
+ * depth. The layout never shares an element with the frame (its
+ * `border-radius: inherit` would overwrite the frame's radius definition);
+ * frame and cell fuse when — and only when — there is no layout, which is
+ * exactly the plain form (`djui-surface`).
+ *
+ * Markup contract: the element including `djui-surface` or
+ * `djui-surface-segmented` carries `data-djui-next-surface` (the Surface
+ * components emit it; hand-written markup adds it). Without the stamp, a
+ * plain surface's fill matches its parent and a segmented surface's cells
+ * match its frame.
+ */
+
+/// The surface corner radius as a `var()` fallback chain: per-component →
+/// global → the built-in `0.5rem`. Every level is a declared consumer hook
+/// and a config emission target (root `surfaceRadius` /
+/// `components.<Name>.surfaceRadius`); full-bleed layouts set the var to `0`
+/// under a media query rather than special-casing the mixins.
+@function djui-surface-radius($component: null) {
+  $global: var(--djui-surface-radius, 0.5rem);
+  @if $component {
+    @return var(--djui-component-#{$component}--surface-radius, #{$global});
+  }
+  @return $global;
+}
+
+/// The surface padding as a `var()` fallback chain: per-component → global →
+/// the built-in `1rem`. Config emission targets: root `surfacePadding`
+/// (responsive-capable) / `components.<Name>.surfacePadding`.
+@function djui-surface-padding($component: null) {
+  $global: var(--djui-surface-padding, 1rem);
+  @if $component {
+    @return var(--djui-component-#{$component}--surface-padding, #{$global});
+  }
+  @return $global;
+}
+
+/// The frame declarations both surface forms share: radius, optional border,
+/// and the elevation/bevel `box-shadow` — composed into ONE declaration, so
+/// setting one never erases the other. `$elevation` is a shadow token name
+/// (`default`/`overlay`/`heavy`, or any `config.shadows` key) or `false`;
+/// `$border` draws a separator-width line in the scale's base ink (the same
+/// ink the separators are drawn in, on the outside edge), overridable via the
+/// `--djui-surface-border-color-rgb` hook; `$bevel` adds a one-separator inner
+/// highlight/shade pair (`--djui-surface-bevel-light`/`-dark` hooks, full
+/// color values) for a discrete relief effect.
+@mixin djui-surface-frame($component: null, $elevation: default, $border: false, $bevel: false) {
+  border-radius: djui-surface-radius($component);
+
+  @if $border {
+    border: djui-separator-width($component)
+      solid
+      rgb(var(--djui-surface-border-color-rgb, var(--djui-previous-surface-2-rgb)));
+  }
+
+  @if $bevel {
+    $separator: djui-separator-width($component);
+    $bevel-shadows: inset 0 #{$separator} 0 var(--djui-surface-bevel-light, rgba(255, 255, 255, 0.08)),
+      inset 0 calc(#{$separator} * -1) 0 var(--djui-surface-bevel-dark, rgba(0, 0, 0, 0.25));
+
+    @if $elevation {
+      box-shadow: $bevel-shadows, var(--djui-shadow-#{$elevation});
+    } @else {
+      box-shadow: $bevel-shadows;
+    }
+  } @else if $elevation {
+    @include djui-shadow($elevation);
+  }
+}
+
+/// The plain surface — a single container whose fill reads one step above its
+/// context: the markup stamps `data-djui-next-surface` on the element (see
+/// the contract above) and the fill paints `current-surface`, which the stamp
+/// resolves one step up. The stamp does double duty: contents inherit the
+/// shifted context too, so anything surface-aware inside computes from the
+/// right level wherever the surface sits. Guaranteed to match the cell color
+/// of a segmented surface in the same context — a plain surface IS a one-cell
+/// surface with no visible lines.
+///
+/// `$padding: true` pads with the padding chain; `false` none; a length pads
+/// literally.
+@mixin djui-surface($component: null, $padding: true, $elevation: default, $border: false, $bevel: false) {
+  // Reads the shared fill slot, so a state that wants a different fill assigns
+  // the slot instead of declaring `background-color` a second time. Re-declared
+  // per element so a hovered ancestor cannot leak its fill downward.
+  --djui-background-resolved: initial;
+  background-color: var(--djui-background-resolved, rgb(var(--djui-current-surface-rgb)));
+  @include djui-surface-frame($component, $elevation, $border, $bevel);
+
+  @if $padding == true {
+    padding: djui-surface-padding($component);
+  } @else if $padding {
+    padding: $padding;
+  }
+}
+
+/// A nested region of a padded surface that bleeds to the surface's own
+/// edges — a scroll rail, a media strip, a full-width footer row — while the
+/// surface's other content keeps its padding. The region cancels the
+/// surface's padding on the edges it reaches with negative margins read from
+/// the same padding chain, so the bleed and the padding can never drift
+/// apart. `$padding: true` (the default) re-establishes the cancelled
+/// padding INSIDE the region: on a scroll container that puts the breathing
+/// room inside the scroll track — under the content, above the scrollbar —
+/// instead of as dead space outside it (`false` for none, a length pads
+/// literally).
+///
+/// Edges are opt-in per logical side, because which edges the region reaches
+/// is position knowledge only the including element has. `$inline` bleeds
+/// both inline edges; a region that also reaches the block-start or
+/// block-end edge spans the surface's corner arc there, so those corners
+/// re-round from the radius chain — the radius token cascades from the
+/// surface to any depth, so the re-round holds across intervening layout
+/// elements (the same chain a full-bleed layout zeroes under a media query).
+@mixin djui-surface-bleed($component: null, $inline: true, $block-start: false, $block-end: false, $padding: true) {
+  $bleed: calc(-1 * #{djui-surface-padding($component)});
+
+  @if $inline {
+    margin-inline: $bleed;
+
+    @if $padding == true {
+      padding-inline: djui-surface-padding($component);
+    } @else if $padding {
+      padding-inline: $padding;
+    }
+  }
+
+  @if $block-start {
+    margin-block-start: $bleed;
+
+    @if $padding == true {
+      padding-block-start: djui-surface-padding($component);
+    } @else if $padding {
+      padding-block-start: $padding;
+    }
+
+    @if $inline {
+      border-start-start-radius: djui-surface-radius($component);
+      border-start-end-radius: djui-surface-radius($component);
+    }
+  }
+
+  @if $block-end {
+    margin-block-end: $bleed;
+
+    @if $padding == true {
+      padding-block-end: djui-surface-padding($component);
+    } @else if $padding {
+      padding-block-end: $padding;
+    }
+
+    @if $inline {
+      border-end-start-radius: djui-surface-radius($component);
+      border-end-end-radius: djui-surface-radius($component);
+    }
+  }
+}
+
+/// The separator ink — the segmented frame's fill, which the layout gaps
+/// reveal as the divider lines — as a `var()` fallback chain: per-component →
+/// global → the built-in base (`surface-1`, the maximum-contrast default).
+/// Config emission targets: root `separatorColor` /
+/// `components.<Name>.separatorColor` (a surface color token name). Softer
+/// dividers point the chain a step or two up the scale. Absolute either way —
+/// the ink does not track the context cascade, so lines keep the same weight
+/// at any nesting depth.
+@function djui-separator-color($component: null) {
+  // Unconfigured, a separator is drawn two levels below its host — the
+  // `previous-surface-2` channel, which clamps at the ground, so a line on the
+  // lowest levels still lands below its context rather than on it. Read here,
+  // at the point of use, so it resolves against the host's own context.
+  $global: var(--djui-separator-color-rgb, var(--djui-previous-surface-2-rgb));
+  @if $component {
+    // The `--hairline-color-rgb` name is the pre-rename spelling, kept one
+    // release as an inner fallback so a consumer's scoped retune keeps working.
+    @return var(
+      --djui-component-#{$component}--separator-color-rgb,
+      var(--djui-component-#{$component}--hairline-color-rgb, #{$global})
+    );
+  }
+  @return $global;
+}
+
+/// The segmented surface's frame. Painted with the separator ink — the scale's
+/// base by default, retunable through the `djui-separator-color()` chain —
+/// always absolute, regardless of context (see the section comment). Carries
+/// radius and elevation; no padding, no cell fill. The layout and cells go on
+/// child elements.
+@mixin djui-surface-segmented($component: null, $elevation: default, $border: false, $bevel: false) {
+  // Reads the fill slot so an interactive segmented surface still washes on
+  // hover — the hover assigns the slot, and a bare declaration here would have
+  // silently outranked nothing and simply ignored it.
+  --djui-background-resolved: initial;
+  background-color: var(--djui-background-resolved, rgb(djui-separator-color($component)));
+  @include djui-surface-frame($component, $elevation, $border, $bevel);
+}
+
+/// Emit `box-shadow` from a generated shadow token (`config.shadows.<name>`),
+/// optionally rotating the offset so a rotated element casts a shadow that still
+/// reads in the unrotated direction — e.g. a 45° tooltip-arrow tip needs
+/// `$rotation: -45deg` so its shadow points straight down like the bubble's.
+///
+/// `$rotation: 0deg` (default) emits the composed convenience var verbatim — a
+/// drop-in for `box-shadow: var(--djui-shadow-<name>)`. A non-zero rotation
+/// rotates the offset vector `(ox, oy)` by `$rotation` — `ox' = ox·cos − oy·sin`,
+/// `oy' = ox·sin + oy·cos` — with cos/sin resolved at build time and composed over
+/// the per-part vars in `calc()`. Blur is rotation-invariant, so it passes through.
+@mixin djui-shadow($name, $rotation: 0deg) {
+  @if $rotation == 0deg {
+    // Reads a slot so a band (or a state) can drop the elevation by assigning,
+    // rather than redeclaring `box-shadow` on top of this one. Re-declared
+    // `initial` per element because custom properties inherit and an elevated
+    // ancestor would otherwise flatten every nested surface.
+    --djui-shadow-resolved: initial;
+    box-shadow: var(--djui-shadow-resolved, var(--djui-shadow-#{$name}));
+  } @else {
+    $cos: math.cos($rotation);
+    $sin: math.sin($rotation);
+    box-shadow:
+      calc(
+        var(--djui-shadow-#{$name}-offset-x) * #{$cos} +
+          var(--djui-shadow-#{$name}-offset-y) * #{-$sin}
+      )
+      calc(
+        var(--djui-shadow-#{$name}-offset-x) * #{$sin} +
+          var(--djui-shadow-#{$name}-offset-y) * #{$cos}
+      )
+      var(--djui-shadow-#{$name}-blur) var(--djui-shadow-#{$name}-color);
+  }
+}
+
+/// The separator width — the surface system's cell divider — as a `var()`
+/// fallback chain: per-component per-axis → per-component → global per-axis →
+/// global → the built-in 1px. Every level is a declared consumer hook and a
+/// config emission target (root `separator` / `components.<Name>.separator`);
+/// `0` disables. `$axis` is `row` or `column`; `$component` the kebab-case
+/// config-path slug (`dashboard-template`), or `null` for the global chain only.
+@function djui-separator-width($component: null, $axis: row) {
+  $global: var(--djui-separator-#{$axis}, var(--djui-separator, 0.0625rem));
+  @if $component {
+    // The `--hairline` names are the pre-rename spelling, kept one release as
+    // inner fallbacks so a consumer's scoped retune keeps working.
+    @return var(
+      --djui-component-#{$component}--separator-#{$axis},
+      var(
+        --djui-component-#{$component}--hairline-#{$axis},
+        var(
+          --djui-component-#{$component}--separator,
+          var(--djui-component-#{$component}--hairline, #{$global})
+        )
+      )
+    );
+  }
+  @return $global;
+}
+
+/// The segmented surface's layout — lays the cells out with gap-based
+/// separators and inherits the frame's radius so it reaches the cells. The gap
+/// reveals the frame's base fill: the drawn divider lines. Always a child of
+/// the frame, never the frame itself (`border-radius: inherit` on the element
+/// that DEFINES the radius overwrites the definition and the surface loses
+/// its corners). Pass the component's kebab-case config-path slug so its
+/// `--djui-component-<slug>--separator(-row/-column)` hooks sit on top of the chain
+/// (see `djui-separator`).
+/// `$radius` is `inherit` by default — the radius-drilling idiom, which §3.5
+/// exempts from the slot model because a CSS-wide keyword cannot travel through
+/// a custom property. A caller whose bands need a real corner passes one, so the
+/// zones can partition the axis with `border-radius` declared exactly once in
+/// each rather than one zone overriding another.
+@mixin djui-surface-layout($component: null, $radius: inherit) {
+  row-gap: djui-separator-width($component, row);
+  column-gap: djui-separator-width($component, column);
+  border-radius: $radius;
+}
+
+/// A segmented surface's cell. Paints `current-surface` — one step above the
+/// outside context via the frame's `data-djui-next-surface` stamp. Cells own
+/// their padding: `$padding: true` pads with the padding chain, a length pads
+/// literally, `false` (the default) leaves padding to the component.
+@mixin djui-surface-cell($component: null, $padding: false, $declare: true) {
+  // Reads the shared fill slot, so a state that wants a different fill assigns
+  // the slot instead of declaring `background-color` a second time. Re-declared
+  // per element so a hovered ancestor cannot leak its fill downward.
+  //
+  // `$declare: false` is for the one shape where this mixin lands on an element
+  // whose *base* block already declares the property — Pagination's segmented
+  // cells, which are `djui-selectable-base` items first and surface cells
+  // second. There the mixin must only assign, or the element ends up with
+  // `background-color` written by two blocks and back over budget.
+  @if $declare {
+    --djui-background-resolved: initial;
+    background-color: var(--djui-background-resolved, rgb(var(--djui-current-surface-rgb)));
+  } @else {
+    --djui-background-resolved: rgb(var(--djui-current-surface-rgb));
+  }
+
+  @if $padding == true {
+    padding: djui-surface-padding($component);
+  } @else if $padding {
+    padding: $padding;
+  }
+}
+
+/// Rounds only the true outer corners of a segmented surface's cells. Apply
+/// to the layout element (which must carry `border-radius: inherit`, e.g. via
+/// djui-surface-layout); cells are its direct children, filling row by row in
+/// a grid of $columns tracks. $columns: 1 covers vertical lists (first cell
+/// gets both top corners, last cell both bottom corners).
+///
+/// Handles short first rows (fewer cells than tracks) and partial last rows.
+/// For responsive track counts, re-include under a media query with the new
+/// $columns — every rule below carries the same (0,1,0) specificity (extra
+/// qualifiers are wrapped in :where()), so the later inclusion wins on
+/// source order.
+@mixin djui-surface-corners($columns: 1) {
+  > :nth-child(n) {
+    border-radius: 0;
+  }
+
+  > :first-child {
+    border-top-left-radius: inherit;
+  }
+
+  // Last cell of the first row: the $columns-th cell, or the last cell
+  // overall when there are fewer cells than tracks.
+  > :nth-child(#{$columns}),
+  > :nth-child(-n + #{$columns}):where(:last-child) {
+    border-top-right-radius: inherit;
+  }
+
+  // First cell of the last row: sits in the first track ($columns·n + 1)
+  // and within the last $columns cells.
+  > :nth-child(#{$columns}n + 1):where(:nth-last-child(-n + #{$columns})) {
+    border-bottom-left-radius: inherit;
+  }
+
+  > :last-child {
+    border-bottom-right-radius: inherit;
+  }
+}
+
+/// A row inside a composed menu panel (`MenuList`) — the presentational sibling
+/// of the data-driven `MenuVisual` item. A segmented cell (paints
+/// `current-surface`, so it reads one step above the panel's context) with the
+/// menu's padding, laid out as an icon+label flex line. Interactive rows (a
+/// link, a control-wrapping label) take the interaction hover/press wash off the
+/// ramp-relative `--djui-current-surface-hover/active-rgb` tokens; a static row
+/// (a heading) passes `$interactive: false` to opt out (no cursor, no wash).
+/// The menu chrome — the frame, separator seams, rounded end cells — is
+/// `MenuList`'s; a row only paints its own cell.
+///
+/// Two halves, as every state-carrying mixin in this file (see
+/// `djui-input-base`): `-style` is declarations only, `-states` the nested
+/// rules, the bare name both in that order — include it LAST in the host block.
+@mixin djui-menu-row-style($interactive: true) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2rem;
+  padding: 0 0.75rem;
+  white-space: nowrap;
+  @include djui-surface-cell(menu);
+  // Rows read dimmed at rest; an interactive row brightens to full foreground on
+  // hover/press, a static row (a heading) stays dimmed. Embedded controls inherit
+  // this ink — they shed their own foreground treatment in `standalone` mode — so
+  // a link, a switch and a language trigger all dim and light up as one row.
+  // Declared once each; the states half reassigns. `djui-surface-cell` above
+  // declares the resting fill, so this slot carries only what a state changes.
+  --djui-row-foreground-resolved: initial;
+  color: var(--djui-row-foreground-resolved, #{color.get(foreground, primary, 0.65)});
+
+  @if $interactive {
+    cursor: pointer;
+
+    // One keyboard ring at the row level, whether the row itself is the focus
+    // target (a link) or a control it wraps (a label around a bare switch or
+    // menu trigger, which sheds its own ring via `standalone`). Hugging the
+    // row (`$offset: 0` — rows sit flush, an offset ring would live inside
+    // the neighbours); the position slot below lifts the ringed row so a
+    // later sibling's opaque fill cannot paint over the ring's lower edge.
+    @include djui-focus-ring-style($offset: 0);
+    --djui-row-position-resolved: initial;
+    position: var(--djui-row-position-resolved, static);
+  }
+}
+
+/// The states half of an interactive row: the ring claim — from the row's own
+/// keyboard focus, or from a focusable child's (a link inside a label), which
+/// claims the row's ring rather than declaring a second one — and the wash.
+@mixin djui-menu-row-states {
+  &:focus-visible,
+  &:has(:focus-visible) {
+    @include djui-focus-ring-claim;
+    --djui-row-position-resolved: relative;
+  }
+
+  @include djui-hover {
+    --djui-background-resolved: rgb(var(--djui-current-surface-hover-rgb));
+    --djui-row-foreground-resolved: #{color.get(foreground, primary)};
+  }
+
+  &:active {
+    --djui-background-resolved: rgb(var(--djui-current-surface-active-rgb));
+    --djui-row-foreground-resolved: #{color.get(foreground, primary)};
+  }
+}
+
+/// The usual form: both halves, in order. Include it LAST in the host block.
+@mixin djui-menu-row($interactive: true) {
+  @include djui-menu-row-style($interactive);
+
+  @if $interactive {
+    @include djui-menu-row-states;
+  }
+}
+
+/// Floating field label — a label-typography chip that straddles the top
+/// edge of the control that follows it, "punching" the control's outline.
+/// The chip's background is the current surface (the surface system supplies
+/// the punch color; set/next-surface context keeps it correct on raised
+/// cells), so it merges with whatever the field sits on. The negative
+/// vertical margins center the 1rem-tall chip on the control's top edge —
+/// the container must not add its own gap between label and control.
+/// Consumed by Field's `theme: 'floating'`; public so app-side SCSS can
+/// adopt the look before component migration.
+@mixin djui-floating-label {
+  @include djui-typography(label);
+  position: relative;
+  z-index: 1;
+  width: fit-content;
+  height: 1rem;
+  line-height: 1rem;
+  margin: -0.5rem 0.75rem;
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+  // Reads the shared fill slot, so a state that wants a different fill assigns
+  // the slot instead of declaring `background-color` a second time. Re-declared
+  // per element so a hovered ancestor cannot leak its fill downward.
+  --djui-background-resolved: initial;
+  background-color: var(--djui-background-resolved, rgb(var(--djui-current-surface-rgb)));
+  color: rgba(var(--djui-foreground-primary-rgb), 0.75);
+  white-space: nowrap;
+}
+
+/**
+ * Color
+ */
+
+/// Sets the default current-color for a component.
+/// Components that accept a `color` prop use --djui-current-color-rgb
+/// internally. This mixin sets the fallback when no color prop is provided.
+///
+/// The theme speaks first: the form family's accent
+/// (`--djui-component-group-form--color-accent-rgb`, the CSS `accent-color`
+/// idea — one token colors the checked/active state of every control: the
+/// checkbox fill, radio dot, switch on-track, slider range, progress bar) is
+/// read ahead of the passed scope/name, which stays the built-in fallback for
+/// themes that leave the accent unset. The contrast twin rides along so an
+/// accented fill keeps its designed glyph/thumb ink; when the accent is unset
+/// the twin resolves to nothing and readers keep their own
+/// `current-surface` fallback, exactly as before.
+@mixin djui-default-color($scope, $name: null) {
+  @if $name {
+    --djui-current-color-rgb: var(--djui-component-group-form--color-accent-rgb, var(--djui-#{$scope}-#{$name}-rgb));
+  } @else {
+    --djui-current-color-rgb: var(--djui-component-group-form--color-accent-rgb, var(--djui-#{$scope}-rgb));
+  }
+  --djui-current-color-contrast-rgb: var(--djui-component-group-form--color-accent-contrast-rgb);
+}
+
+/// Contrasting text on a solid-colored background.
+/// Uses per-color contrast if available, falls back to the global foreground contrast.
+/// Dark mode antialiasing is handled globally.
+/// This mixin adds it for light mode where we have light-on-dark text.
+@mixin djui-text-on-colored {
+  // Assigns the ink slot rather than declaring `color`, so a variant that uses
+  // it stacks with `djui-background-slots` instead of redeclaring the property. A call
+  // site with no `djui-background-slots` root still needs a `color` of its own.
+  --djui-foreground-resolved: rgb(var(--djui-current-color-contrast-rgb, var(--djui-foreground-contrast-rgb)));
+
+  html[data-djui-mode="light"] & {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/// Diagonal two-tone hatch fill — a "present but set aside" texture (e.g. an
+/// excluded item). `$base` is a surface/color var stem: "next-surface-2" for the
+/// uncolored default, "current-color" when a color prop is set. The stripe
+/// alternates the base with a mode-aware variation of *itself* (darker in light
+/// mode, lighter in dark) rather than a transparent overlay, so it stays
+/// token-driven and adapts to mode automatically. It IS the fill, not an overlay.
+@mixin djui-hatch($base, $angle: 45deg, $width: 0.3125rem) {
+  background-image: repeating-linear-gradient(
+    $angle,
+    rgb(var(--djui-#{$base}-rgb)) 0 $width,
+    rgb(var(--djui-#{$base}-darker-rgb)) $width ($width * 2)
+  );
+
+  html[data-djui-mode="dark"] & {
+    background-image: repeating-linear-gradient(
+      $angle,
+      rgb(var(--djui-#{$base}-rgb)) 0 $width,
+      rgb(var(--djui-#{$base}-lighter-rgb)) $width ($width * 2)
+    );
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Alpha (the unit and the step chains)
+//
+// Every alpha the kit paints is an integer number of `--djui-alpha-unit`s
+// (`config.alpha.unit`, 1/16 by default): a wash is "step 1", its hover "step
+// 2", a muted label "step 12". Alpha is a unit, not a palette — a fixed grid
+// needs no level count and its top is `1 / unit` — so there is no enumerated
+// ladder and no semantic sub-keys (the pre-2026-08-29 `soft`/`tint`/`idle`
+// values were three hand-picked decimals with no scale behind them). What a
+// theme states is a *step* per tier: `components.<Name>.fillAlpha` over
+// `componentGroups.<group>.fillAlpha` over the kit's floor; a per-instance
+// `--djui-current-fill-alpha` sits above them all. Interaction is derived, not
+// configured: hover is one step up, active two; a tinted (coloured) wash sits
+// one step above the neutral one, structurally.
+// ───────────────────────────────────────────────────────────────────────────
+
+/// An alpha from a step count: `calc(<step> * unit)`. `$step` may be a number
+/// or a `var()` chain.
+@function djui-alpha($step) {
+  @return calc((#{$step}) * var(--djui-alpha-unit, 0.0625));
+}
+
+/// The fill-alpha step chain for a component: instance hook → component tier →
+/// group tier → the floor (step 1, a bare wash).
+@function djui-fill-alpha-step($component: null, $group: null, $floor: 1) {
+  $chain: $floor;
+  @if $group {
+    $chain: var(--djui-component-group-#{$group}--fill-alpha, #{$chain});
+  }
+  @if $component {
+    $chain: var(--djui-component-#{$component}--fill-alpha, #{$chain});
+  }
+  @return var(--djui-current-fill-alpha, #{$chain});
+}
+
+/// The idle-ink step chain for a selectable (the resting foreground of an
+/// unselected row): instance hook → component tier → the floor (step 10).
+@function djui-idle-alpha-step($component: null, $floor: 10) {
+  $chain: $floor;
+  @if $component {
+    $chain: var(--djui-component-#{$component}--idle-alpha, #{$chain});
+  }
+  @return var(--djui-current-idle-alpha, #{$chain});
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Fill bodies (Layer 1)
+//
+// The four shared appearances of a filled element — soft/solid × uncolored/
+// colored. Each emits its resting look and, when `$interactive`, its own
+// mode-aware hover/active shift (darken in light mode, lighten in dark). These
+// are the single source of truth for the look; `djui-background-modifiers` (and the
+// selectable path) compose them. Useful standalone for a component with one
+// fixed, non-configurable appearance.
+//
+// The soft tints carry no literal alphas: each reads an optional override hook
+// (`--djui-current-alpha-*`, unset by default) falling back to the global scale
+// step (`--djui-alpha-*`, from the TS config). Tune globally in the config, or
+// locally by setting `--djui-current-alpha-*` on any scope (it cascades).
+// ───────────────────────────────────────────────────────────────────────────
+
+/// Soft uncolored: a faint foreground tint.
+/// The resting fill declaration that every variant assigns into.
+///
+/// Include this ONCE at the root of any element that takes a `djui-background-*`
+/// variant. It is the other half of DESIGN-RESET §3.3 invariant 1: **every
+/// property is declared exactly once, in the base block, and every other block
+/// only assigns variables.** Before it existed, each variant mixin declared
+/// `background-color` and `color` itself, so a coloured soft button had `color`
+/// set by both `.DjuiButton` and `.DjuiButton--colored.DjuiButton--soft` — two
+/// declarations of one property on one element, which the hardened reset then
+/// made visible as a depth-4 chain.
+///
+/// The slots are re-declared `initial` per element on purpose: custom properties
+/// inherit, so without it a filled ancestor would leak its fill and its ink into
+/// every nested component that reads the same names.
+@mixin djui-background-slots {
+  --djui-background-resolved: initial;
+  --djui-foreground-resolved: initial;
+  background-color: var(--djui-background-resolved, transparent);
+  color: var(--djui-foreground-resolved, #{color.get(foreground, primary)});
+}
+
+@mixin djui-background-soft($interactive: false, $component: null, $group: null) {
+  // The fill is declared once and every state reassigns the slot. The slot is
+  // re-declared per element so a hovered ancestor cannot leak its fill into a
+  // nested one — custom properties inherit. The wash is the component's
+  // fill-alpha step; hover and active are one and two steps over it.
+  $step: djui-fill-alpha-step($component, $group);
+  --djui-background-resolved: rgba(var(--djui-foreground-primary-rgb), #{djui-alpha($step)});
+  --djui-foreground-resolved: #{color.get(foreground, primary)};
+
+  @if $interactive {
+    @include djui-hover {
+      --djui-background-resolved: rgba(var(--djui-foreground-primary-rgb), #{djui-alpha("#{$step} + 1")});
+    }
+
+    &:active {
+      --djui-background-resolved: rgba(var(--djui-foreground-primary-rgb), #{djui-alpha("#{$step} + 2")});
+    }
+  }
+}
+
+/// Soft colored: a faint current-color tint, current-color text.
+@mixin djui-background-soft-colored($interactive: false, $component: null, $group: null) {
+  // The fill is declared once and every state reassigns the slot. The slot is
+  // re-declared per element so a hovered ancestor cannot leak its fill into a
+  // nested one — custom properties inherit. A tint reads weaker than a neutral
+  // wash at the same alpha, so it sits one step above the component's
+  // fill-alpha step, structurally; hover and active step on from there.
+  $step: djui-fill-alpha-step($component, $group);
+  --djui-background-resolved: rgba(var(--djui-current-color-rgb), #{djui-alpha("#{$step} + 1")});
+  --djui-foreground-resolved: rgb(var(--djui-current-color-rgb));
+
+  @if $interactive {
+    @include djui-hover {
+      --djui-background-resolved: rgba(var(--djui-current-color-rgb), #{djui-alpha("#{$step} + 2")});
+    }
+
+    &:active {
+      --djui-background-resolved: rgba(var(--djui-current-color-rgb), #{djui-alpha("#{$step} + 3")});
+    }
+  }
+}
+
+/// Solid uncolored: the next surface in the stack. Hover/active read the
+/// mode-baked interaction tokens (a ramp-relative shift toward the neighbouring
+/// level, already directed per mode), so there is no per-mode branch here.
+@mixin djui-background-solid($interactive: false) {
+  // The fill is declared once and every state reassigns the slot. The slot is
+  // re-declared per element so a hovered ancestor cannot leak its fill into a
+  // nested one — custom properties inherit.
+  --djui-background-resolved: rgb(var(--djui-next-surface-2-rgb));
+  --djui-foreground-resolved: #{color.get(foreground, primary)};
+
+  @if $interactive {
+    @include djui-hover {
+      --djui-background-resolved: rgb(var(--djui-next-surface-2-hover-rgb));
+    }
+
+    &:active {
+      --djui-background-resolved: rgb(var(--djui-next-surface-2-active-rgb));
+    }
+  }
+}
+
+/// Solid colored: the current color filled, with contrasting text. Hover/active
+/// read the mode-baked interaction channels of the current color.
+@mixin djui-background-solid-colored($interactive: false) {
+  // The fill is declared once and every state reassigns the slot. The slot is
+  // re-declared per element so a hovered ancestor cannot leak its fill into a
+  // nested one — custom properties inherit.
+  --djui-background-resolved: rgb(var(--djui-current-color-rgb));
+  @include djui-text-on-colored;
+
+  @if $interactive {
+    @include djui-hover {
+      --djui-background-resolved: rgb(var(--djui-current-color-hover-rgb));
+    }
+
+    &:active {
+      --djui-background-resolved: rgb(var(--djui-current-color-active-rgb));
+    }
+  }
+}
+
+/// Surface uncolored: a chip one relative step off its context, foreground ink
+/// (not a contrast pair — a surface fill wants readable body ink), with the
+/// shared mode-aware variation hover. `$level` is the relative surface lookahead
+/// it fills: `next-surface-1` (the default — one above context, the raised-chip /
+/// form-input level) or `previous-surface-1` (one below, for a recessed control).
+/// Both track context, so the same button reads correctly at any depth.
+@mixin djui-background-surface($interactive: false, $level: "next-surface-1") {
+  // The fill is declared once and every state reassigns the slot. The slot is
+  // re-declared per element so a hovered ancestor cannot leak its fill into a
+  // nested one — custom properties inherit.
+  --djui-background-resolved: rgb(var(--djui-#{$level}-rgb));
+  --djui-foreground-resolved: #{color.get(foreground, primary)};
+
+  @if $interactive {
+    @include djui-hover {
+      --djui-background-resolved: rgb(var(--djui-#{$level}-hover-rgb));
+    }
+
+    &:active {
+      --djui-background-resolved: rgb(var(--djui-#{$level}-active-rgb));
+    }
+  }
+}
+
+/// Surface colored: an absolute surface level named through `color`
+/// (`color="surface-5"`), filled from the current-color channel. Foreground ink,
+/// the same mode-aware variation hover as the uncolored form — the only
+/// difference is the fill level is pinned by the token instead of resolved one
+/// step up from context.
+@mixin djui-background-surface-colored($interactive: false) {
+  // The fill is declared once and every state reassigns the slot. The slot is
+  // re-declared per element so a hovered ancestor cannot leak its fill into a
+  // nested one — custom properties inherit.
+  --djui-background-resolved: rgb(var(--djui-current-color-rgb));
+  --djui-foreground-resolved: #{color.get(foreground, primary)};
+
+  @if $interactive {
+    @include djui-hover {
+      --djui-background-resolved: rgb(var(--djui-current-color-hover-rgb));
+    }
+
+    &:active {
+      --djui-background-resolved: rgb(var(--djui-current-color-active-rgb));
+    }
+  }
+}
+
+/// The filled-chip coloring convention (Layer 2). Include at a BEM block root;
+/// it emits the modifier rules relative to `&`, composing the Layer 1 bodies.
+///
+/// `$kind` is the fill state machine for a co-located filled chip:
+///   - `static`      resting fills only.                       (Badge)
+///   - `interactive` same fills, with mode-aware hover/active.  (Button)
+/// (Selectable list items — Tabs, NavigationItem — don't go through here; their
+/// topologies differ, so they compose `djui-selectable-base` + the Layer 1 fill
+/// bodies directly. See the "Selectable item" section.)
+/// `$accepts-hatched` is orthogonal — either kind may opt into the `--hatched`
+/// modifier, swapping the solid fill for a two-tone diagonal (see djui-hatch).
+/// `$accepts-surface` opts into the `--surface` modifier — a foreground-ink
+/// surface fill (uncolored = one step up from context; `--colored` = the absolute
+/// level named by `color`), distinct from `solid` in that it never carries a
+/// contrast pair. Button opts in; Badge does not.
+/// Note: `$kind`, not `$mode` — "mode" is light/dark in djui's vocabulary.
+@mixin djui-background-modifiers($kind: static, $accepts-hatched: false, $accepts-surface: false, $component: null, $group: null) {
+  $interactive: $kind == interactive;
+
+  // The resting declaration, once, on the element itself — every variant block
+  // below only assigns into it.
+  @include djui-background-slots;
+
+  // The uncolored variants are scoped `:not(--colored)` so the colored ones
+  // never override them — each value is set once, at the level it differs
+  // (djui's no-override rule, across the colored/uncolored modifier axis).
+  &:not(#{&}--colored)#{&}--soft {
+    @include djui-background-soft($interactive, $component, $group);
+  }
+
+  &--colored#{&}--soft {
+    @include djui-background-soft-colored($interactive, $component, $group);
+  }
+
+  &:not(#{&}--colored)#{&}--solid {
+    @include djui-background-solid($interactive);
+  }
+
+  &--colored#{&}--solid {
+    @include djui-background-solid-colored($interactive);
+  }
+
+  // `plain` is a *value*, not an absence — and with the UA fill no longer
+  // stripped by a page-wide rule, "no fill declared" means `ButtonFace` grey
+  // rather than nothing. So the variant that asks for no fill has to say so.
+  // Mutually exclusive with the fills above by construction: the variant
+  // resolves to exactly one modifier.
+  // `plain` is a *value*, not an absence, and it needs no rule of its own any
+  // more: `djui-background-slots` already rests at `transparent`, and a call site that
+  // wants a plain button to wash on hover (the Repeater's row controls) assigns
+  // the slot. An empty variant block here would have been a second declaration
+  // of a property the base block already owns.
+
+  // ─── Surface (foreground-ink fill) ───
+  // Relative by default — one step off context (`next`, or `previous` under the
+  // `--surface-previous` modifier); the level tracks context so the same button
+  // reads at any depth. `--surface-pinned` (set only when `color` names a
+  // *surface* token) overrides that with an absolute level. A non-surface `color`
+  // — e.g. a theme's accent default — leaves the relative path in force, so a
+  // default accent never leaks a colored fill onto a surface button.
+  @if $accepts-surface {
+    &--surface#{&}--surface-pinned {
+      @include djui-background-surface-colored($interactive);
+    }
+
+    &--surface:not(#{&}--surface-pinned):not(#{&}--surface-previous) {
+      @include djui-background-surface($interactive, "next-surface-1");
+    }
+
+    &--surface:not(#{&}--surface-pinned)#{&}--surface-previous {
+      @include djui-background-surface($interactive, "previous-surface-1");
+    }
+  }
+
+  // ─── Hatched (solid fill → two-tone diagonal) ───
+  @if $accepts-hatched {
+    &:not(#{&}--colored)#{&}--solid#{&}--hatched {
+      @include djui-hatch("next-surface-2");
+    }
+
+    &--colored#{&}--solid#{&}--hatched {
+      @include djui-hatch("current-color");
+    }
+  }
+}
+
+/// Inline text link styling. Bold, no underline. Hover/active follow
+/// the soft-button color shift (dark mode lightens, light mode darkens).
+/// Apply the `--colored` modifier or set `--djui-current-color-rgb` to tint.
+@mixin djui-text-link {
+  // One ink declaration; the mode blocks below reassign it. A link states its
+  // hover and press shifts per mode (light darkens, dark lightens), which used
+  // to be four more `color` declarations on the same element.
+  --djui-link-foreground-resolved: initial;
+  color: var(--djui-link-foreground-resolved, #{color.get(foreground, primary)});
+  font-weight: 600;
+  cursor: pointer;
+
+  // The reset strips the UA outline globally, so a link without this has NO
+  // focus indication at all — colour and weight say "link", not "focused".
+  @include djui-focus-ring;
+
+  html[data-djui-mode="light"] & {
+    @include djui-hover {
+      --djui-link-foreground-resolved: #{color.get(foreground, primary, dark)};
+    }
+
+    &:active {
+      --djui-link-foreground-resolved: #{color.get(foreground, primary, darker)};
+    }
+  }
+
+  html[data-djui-mode="dark"] & {
+    @include djui-hover {
+      --djui-link-foreground-resolved: #{color.get(foreground, primary, light)};
+    }
+
+    &:active {
+      --djui-link-foreground-resolved: #{color.get(foreground, primary, lighter)};
+    }
+  }
+}
+
+/**
+ * Form
+ */
+
+/// The form-control box chains. Each knob reads the per-control token
+/// (`--djui-component-<control>--<knob>`), then the family default
+/// (`--djui-component-group-form--<knob>`, config-set), then the built-in
+/// em expression — the same runtime cascade the family's `size` rides, per
+/// knob. Functions (not inlined values) so a Visual that positions content
+/// against a control's padding — a select's chevron gutter — reads the exact
+/// same chain and can't drift from the box it decorates.
+@function djui-form-control-height($component) {
+  @return var(
+    --djui-component-#{$component}--height,
+    var(--djui-component-group-form--height, 2em)
+  );
+}
+
+@function djui-form-control-padding-x($component) {
+  @return var(
+    --djui-component-#{$component}--padding-x,
+    var(--djui-component-group-form--padding-x, calc(0.25rem + 0.25em))
+  );
+}
+
+// `$component` is the control's token slug (e.g. "text-input"). Font-size,
+// height, and the side paddings each ride their own cascade: per-control
+// token → the form family's (config-set) → a built-in floor. The em
+// expressions stay the defaults — one number scales the whole control — but
+// height (`--height`) and side padding (`--padding-x`) are independent knobs,
+// so a theme can break the coupling per knob (say, a fixed side padding over
+// em-derived heights) without reaching into control internals.
+/// Content for assistive technology only: removed from the visual layout,
+/// kept in the accessibility tree.
+///
+/// The clip-rect idiom rather than `display: none` / `visibility: hidden`
+/// (which remove the text from the accessibility tree too), and rather than
+/// `width: 0` (which can collapse the text to nothing in some engines). A
+/// 1×1 clipped box with `white-space: nowrap` keeps the string intact and
+/// unreadable.
+///
+/// `clip-path` is the modern spelling and `clip` the deprecated one; both are
+/// emitted because the pair is still what survives every engine in the support
+/// window, and `clip-path` alone regressed in older WebKit.
+@mixin djui-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/// The segment opt-in of the shared corner vocabulary: `radius="inherit"`.
+///
+/// A passthrough component that ends up *between* elements which own the
+/// corners — the usual case is a control inside an `InputGroup`, where the
+/// group draws the silhouette and its segments must follow — hands its radius
+/// to whatever encloses it.
+///
+/// Deliberately a modifier rule rather than a value written into the
+/// component's radius hook. `border-radius: inherit` is a CSS-wide keyword, and
+/// a keyword reaching a property through `var()` substitution is a corner of
+/// the spec this system does not need to bet on; the class is unambiguous and
+/// behaves identically everywhere. It also keeps `inherit` out of the token,
+/// which every other `radius` string legitimately retunes.
+///
+/// Emitted at block level, so `&` is the block: `.DjuiTextInput--radius-inherit`.
+@mixin djui-radius-inherit {
+  &--radius-inherit {
+    border-radius: inherit;
+  }
+}
+
+/// The chrome a native control arrives wearing, and that djui never wants: the
+/// UA's own typeface at its own size (13.33px Arial, or monospace on
+/// `<textarea>`), its `ButtonFace` fill, and its bevelled `outset` / `inset`
+/// border.
+///
+/// This used to be one element rule in the stylesheet — `input, button,
+/// textarea, select { font: inherit; color: inherit; background: none; border:
+/// none }`. That made every control depend on the page reset being loaded, which
+/// a components-only consumer would not have; and it applied djui's opinion to
+/// the consumer's own controls, which was never djui's business. Stated per
+/// component, both problems go away.
+///
+/// Split in two because the halves have different owners. A component whose type
+/// comes from `djui-typography` already declares the type channels — including,
+/// by way of an undefined token resolving to `unset`, an inherited `color` and
+/// `font-family` — so it takes the box half only. Every argument may be passed
+/// `null` by a component that declares that property itself, so each property is
+/// still declared exactly once.
+///
+/// `inherit` is a deliberate declaration here, not an absence: type reaches
+/// controls through the root, which is the one channel the reset design keeps.
+///
+/// The visually-hidden native inputs (Checkbox, Radio, Switch, ModeSwitch,
+/// Slider, FileUpload) deliberately include neither — they are `opacity: 0` or
+/// clipped, so the UA chrome is measurably invisible and declaring it away would
+/// be dead weight.
+@mixin djui-native-control-type($font-size: inherit, $color: inherit, $font-weight: inherit) {
+  font-family: inherit;
+  font-style: inherit;
+  line-height: inherit;
+
+  @if $font-weight {
+    // Through the cue slot, as `djui-typography` — a control that carries a
+    // colour-only state claims it and its type thickens.
+    font-weight: var(--djui-cue-weight-resolved, #{$font-weight});
+  }
+
+  @if $font-size {
+    font-size: $font-size;
+  }
+
+  @if $color {
+    color: $color;
+  }
+}
+
+/// The box half: the UA's bevel and fill. Width zero with style `solid`, so a
+/// component that later wants an edge sets a width alone and gets what it asked
+/// for rather than nothing.
+@mixin djui-native-control-box($background: transparent) {
+  border: 0 solid;
+
+  @if $background {
+    --djui-background-resolved: initial;
+    background-color: var(--djui-background-resolved, #{$background});
+  }
+}
+
+/// The form-family text box, in the two halves every state-carrying mixin in
+/// this file ships as: `-style` is declarations only, `-states` is the nested
+/// rules that claim its slots, and the bare name is both in that order.
+///
+/// WHY TWO HALVES. Sass emits any declaration that follows a nested rule as a
+/// second rule with the same selector, so a mixin that carries `&:focus` splits
+/// its host's block in two — one authored block, emitted twice, which is the
+/// mechanism DESIGN-RESET §8 measured under every form control. A host either
+/// includes the bare name LAST among its declarations, or includes the halves
+/// separately: `-style` among its declarations, `-states` after them — or its
+/// own states in their place, where the resting box is right but the
+/// selectors are not (NumberInput's root is a box, not the control: it claims
+/// the ring on `:focus-within` and the dim on its own `--disabled`).
+///
+/// Everything a host used to declare after the include is a parameter or a slot
+/// now, so nothing needs to follow it: `$padding-left` / `$padding-right` are
+/// the resting side paddings (Select and Combobox reserve room for an overlaid
+/// trigger on the right; the markdown editor pads its content, not its box),
+/// `$cursor` the resting cursor (a `<select>` is a pointer target; text entry
+/// inherits), `$font-size` the resting size (unset, the control's hook over the
+/// form family's; the editor reads at body size and skips the family rung), and
+/// the two side paddings read a per-control slot the `padding="inherit"`
+/// modifier assigns — `djui-input-padding-inherit` — so the InputGroup opt-in
+/// no longer restates the property.
+@mixin djui-input-base-style(
+  $component: "text-input",
+  $set-height: true,
+  $padding-left: null,
+  $padding-right: null,
+  $cursor: inherit,
+  $font-size: null
+) {
+  // The native chrome, minus the two this mixin declares for itself below.
+  @include djui-native-control-type($font-size: null);
+  @include djui-native-control-box($background: null);
+
+  // Non-scaling radius: a fixed token, NOT `0.5em`, so the corner doesn't grow
+  // with the control's `size` (a 1.5rem input keeps the same 0.5rem corner as a
+  // 1rem one). Config knob: `componentGroups.form.radius`.
+  //
+  // Three rungs, per-instance first: the control's own hook — which a string
+  // `radius` retunes inline and a `radius={false}` zeroes — then the form
+  // family's configured radius, then the built-in floor. The per-control rung
+  // is what lets the shared corner vocabulary reach a form control at all; the
+  // family token alone could only be set for every control at once.
+  border-radius: var(
+    --djui-component-#{$component}--radius,
+    var(--djui-component-group-form--radius, 0.5rem)
+  );
+
+  // The side paddings, declared once each, reading a slot with the family
+  // chain as the fallback. A modifier that wants different paddings assigns the
+  // slot (`djui-input-padding-inherit`) instead of declaring the property again;
+  // a host that wants a different *resting* trailing padding passes it.
+  @if $padding-left == null {
+    $padding-left: djui-form-control-padding-x($component);
+  }
+  @if $padding-right == null {
+    $padding-right: djui-form-control-padding-x($component);
+  }
+  @if $font-size == null {
+    $font-size: var(--djui-component-#{$component}--size, var(--djui-component-group-form--size, 1rem));
+  }
+  --djui-component-#{$component}--padding-left-resolved: initial;
+  --djui-component-#{$component}--padding-right-resolved: initial;
+  padding-left: var(--djui-component-#{$component}--padding-left-resolved, #{$padding-left});
+  padding-right: var(--djui-component-#{$component}--padding-right-resolved, #{$padding-right});
+  width: 100%;
+  font-size: #{$font-size};
+  // The fill, through the kit's background slot: declared once here, assigned
+  // by a state. The one assigner today is the inert twin (`--non-interactive`
+  // on every text-entry control), which points the slot at the form family's
+  // `inputBackgroundNonInteractive` role — a theme's optional second fill for
+  // read-only controls (one level off the context where the live fill is two,
+  // say) — falling back to the live fill when the theme states none. The role
+  // has no kit default on purpose: whether a read-only field looks different
+  // is the theme's call, not the kit's.
+  --djui-background-resolved: initial;
+  background-color: var(--djui-background-resolved, rgb(var(--djui-component-group-form--color-input-background-rgb)));
+
+  // Text-entry controls ring on focus rather than keyboard-focus — a focused
+  // field always shows it — take no offset, and use the form family's own focus
+  // colour. `Field` claims the same ring in the error colour, which is why the
+  // property is declared once here rather than inside the focus rule.
+  @include djui-focus-ring-style(
+    $offset: null,
+    $color: rgb(var(--djui-component-group-form--color-focus-rgb)),
+    $family: "form"
+  );
+
+  // The dimmed, unavailable look — declared here and claimed by the states
+  // half, so a state never redeclares a property the resting rule already owns.
+  //
+  // `$cursor` falls back to `inherit`, not to a value: it is an inherited
+  // property and the kit leans on that (a checkbox's hidden input takes the
+  // affordance from the label around it), so a hard neutral here would sever a
+  // chain that currently works. `opacity` has a real neutral, so it takes one.
+  @include djui-disabled-slots($cursor: $cursor);
+
+  @if $set-height {
+    height: djui-form-control-height($component);
+  }
+}
+
+/// The states half: the ring claim under `$ring-selector` — `focus` (text entry:
+/// a focused field always shows it) or `focus-within` (a box around the
+/// focusable field) — and the native `disabled` claim.
+@mixin djui-input-base-states($ring-selector: focus) {
+  &:#{$ring-selector} {
+    @include djui-focus-ring-claim;
+  }
+
+  &[disabled] {
+    @include djui-disabled-claim($dim: 0.6);
+  }
+}
+
+/// The usual form: both halves, in order. Include it LAST in the host block.
+@mixin djui-input-base(
+  $component: "text-input",
+  $set-height: true,
+  $ring-selector: focus,
+  $padding-left: null,
+  $padding-right: null,
+  $cursor: inherit,
+  $font-size: null
+) {
+  @include djui-input-base-style(
+    $component,
+    $set-height,
+    $padding-left: $padding-left,
+    $padding-right: $padding-right,
+    $cursor: $cursor,
+    $font-size: $font-size
+  );
+  @include djui-input-base-states($ring-selector);
+}
+
+/// A form control's inner segment fill — trigger buttons, spinner columns:
+/// parts that read as segments *of the field they sit in*, not as chips on the
+/// surrounding surface. The fill derives from the field's own fill — one step
+/// up the scale from the form family's `inputBackground` level, via the
+/// generated `--djui-component-group-form--color-input-background-next-rgb`
+/// channel (emitted whenever the configured `inputBackground` names a surface
+/// level) — so the segment/field relationship holds at any nesting depth, in
+/// both directions: no dissolving into the container where the scale has no
+/// headroom, no drifting away from the field where it has plenty. The same
+/// absolute-anchor reasoning the segment separators already follow (base ink,
+/// never context-tracking).
+///
+/// Chain, per channel (base and the `-hover`/`-active` interaction pair): the
+/// per-part consumer hook `--djui-component-<component>--<part>-background-rgb`
+/// first, the derived family channel second, and the context-relative
+/// `next-surface-1` the parts painted historically as the last resort — a
+/// theme whose input background is not a surface level (nothing to derive
+/// from, and no outer emission either) keeps the old ambient step. Foreground
+/// ink: a surface fill wants readable body ink, never a contrast pair.
+@mixin djui-background-field-segment($component, $part, $interactive: true) {
+  --djui-background-resolved: initial;
+  background-color: var(--djui-background-resolved, rgb(var(
+    --djui-component-#{$component}--#{$part}-background-rgb,
+    var(
+      --djui-component-group-form--color-input-background-next-rgb,
+      var(--djui-next-surface-1-rgb)
+    )
+  )));
+  color: color.get(foreground, primary);
+
+  @if $interactive {
+    @include djui-hover {
+      --djui-background-resolved: rgb(var(
+        --djui-component-#{$component}--#{$part}-background-hover-rgb,
+        var(
+          --djui-component-group-form--color-input-background-next-hover-rgb,
+          var(--djui-next-surface-1-hover-rgb)
+        )
+      ));
+    }
+
+    &:active {
+      --djui-background-resolved: rgb(var(
+        --djui-component-#{$component}--#{$part}-background-active-rgb,
+        var(
+          --djui-component-group-form--color-input-background-next-active-rgb,
+          var(--djui-next-surface-1-active-rgb)
+        )
+      ));
+    }
+  }
+}
+
+/// The InputGroup side-padding opt-in (`padding="inherit"`): the control's
+/// paddings come from the surrounding segment's position — the group's outer
+/// edges keep the family padding, inner boundaries sit flush — so adjoined
+/// content reads as one string across the seam (a path prefix flowing into a
+/// slug input). Outside a segment the positional vars are unset and the
+/// control keeps its standalone symmetric padding.
+///
+/// Assigns the two padding slots `djui-input-base-style` declares — it is a
+/// modifier on a control wearing that base, and the property stays declared
+/// once, on the base.
+@mixin djui-input-padding-inherit($component: "text-input") {
+  // One line each: a custom property's value ships verbatim, line breaks
+  // included.
+  --djui-component-#{$component}--padding-left-resolved: var(--djui-input-group-segment--padding-inline-start, var(--djui-input-group-segment--padding-left, #{djui-form-control-padding-x($component)}));
+  --djui-component-#{$component}--padding-right-resolved: var(--djui-input-group-segment--padding-inline-end, var(--djui-input-group-segment--padding-right, #{djui-form-control-padding-x($component)}));
+}
+
+/**
+ * Optical text-box trimming
+ */
+
+/// Optically centre a single line of text on a chosen edge so its glyphs — not
+/// the font's metric box — sit on the centre line of an adjacent element (a
+/// checkbox box, radio circle, or leading icon). `$edge` is `ex` (x-height, the
+/// lowercase body — the usual choice for UI labels) or `cap` (cap height).
+///
+/// `text-box-trim` reads the ascent / x-height / baseline straight from the font,
+/// so this needs no per-font configuration and works for any family. The parent
+/// must centre the line box (e.g. `align-items: center` in a flex row). Browsers
+/// without `text-box-trim` degrade gracefully to the untrimmed line box (the text
+/// sits ~1px high at body size — visible only flush against a symmetric control).
+@mixin djui-text-box-trim($edge: ex) {
+  text-box-trim: trim-both;
+  text-box-edge: #{$edge} alphabetic;
+}
+
+/// A control's inline label (checkbox / radio / switch, beside its box): body
+/// type at the control's own scale — the typography reader multiplies the
+/// ramp's unitless size by `1em`, and the control root sets its font-size
+/// from the family size chain, so label text tracks the control the way
+/// input text tracks its box (one number scales the whole control).
+/// Optically x-height-centred so it lands on the control's centre line.
+@mixin djui-control-label {
+  @include djui-typography(body);
+  @include djui-text-box-trim(ex);
+}
+
+/**
+ * Content
+ */
+
+/// Inline `<code>` styling — small tinted badge with a subtle background and
+/// rounded corners. Color (text + tinted background) is foreground-primary by
+/// default and overridable via `--djui-inline-code-color-rgb`.
+@mixin djui-inline-code {
+  @include djui-typography(code);
+  padding: 0.125em 0.375em;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+  background-color: rgba(
+    var(--djui-inline-code-color-rgb, var(--djui-foreground-primary-rgb)),
+    0.08
+  );
+  color: rgb(
+    var(--djui-inline-code-color-rgb, var(--djui-foreground-primary-rgb))
+  );
+}
+
+/// Fenced code block — monospace, tinted background, soft inner padding.
+/// Strips inline-code chrome from the nested `<code>` so it doesn't render a
+/// badge-on-block.
+@mixin djui-code-block {
+  @include djui-typography(code);
+  background-color: rgba(var(--djui-foreground-primary-rgb), 0.06);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+
+  code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+}
+
+/// Blockquote — soft tinted background, thick left bar, padded.
+/// Reads `--djui-blockquote-color-rgb` if you want to tint it; defaults to
+/// foreground-primary. The voice hooks (`--djui-blockquote-font-family` /
+/// `-style` / `-weight` / `-size` / `--djui-blockquote-line-height`) let a
+/// theme give quoted content its own typeface — a display/quote face for
+/// in-fiction text — without the consumer reaching into markdown internals.
+/// All default to the surrounding prose (inherit / 1em). The box hooks
+/// (`--djui-blockquote-background` / `-rule-width` / `-rule-color` /
+/// `-padding` / `--djui-blockquote-radius`) let a theme trade the boxed
+/// default for a bare "inky" treatment (transparent background, radius 0,
+/// a currentColor rule) — full CSS values, so `transparent`/`currentColor`
+/// compose where the split rgb/alpha tokens couldn't.
+@mixin djui-blockquote {
+  background-color: var(
+    --djui-blockquote-background,
+    rgba(var(--djui-blockquote-color-rgb, var(--djui-foreground-primary-rgb)), 0.04)
+  );
+  border-left: var(--djui-blockquote-rule-width, 0.25rem) solid
+    var(
+      --djui-blockquote-rule-color,
+      rgba(var(--djui-blockquote-color-rgb, var(--djui-foreground-primary-rgb)), 0.4)
+    );
+  padding: var(--djui-blockquote-padding, 0.5rem 1rem);
+  border-radius: var(--djui-blockquote-radius, 0.25rem);
+  font-family: var(--djui-blockquote-font-family, inherit);
+  font-style: var(--djui-blockquote-font-style, inherit);
+  font-weight: var(--djui-blockquote-font-weight, inherit);
+  font-size: var(--djui-blockquote-font-size, 1em);
+  line-height: var(--djui-blockquote-line-height, inherit);
+}
+
+/// Anchor / link — tinted color, no decoration. Color defaults to the theme-wide
+/// default accent (`accent-default`) and is overridable via `--djui-link-color-rgb`.
+@mixin djui-link {
+  color: rgb(var(--djui-link-color-rgb, var(--djui-accent-default-rgb)));
+  text-decoration: none;
+  // The reset neutralises the browser's `a { cursor: pointer }`, so every link
+  // djui draws declares the affordance itself.
+  cursor: pointer;
+}
+
+/// A content rule — the separator line both the Separator component and the
+/// wysiwyg `<hr>` draw. It is a drawn element line (a filled bar of separator
+/// thickness), not a border. Color and alpha ride the Separator hooks
+/// (`--djui-component-separator--color-rgb` / `--djui-component-separator--alpha`,
+/// foreground-primary at 0.2 alpha by default); thickness follows the separator
+/// width chain (`djui-separator`). `$orientation` names the rule's OWN axis — a
+/// `horizontal` rule is a horizontal line (thickness on `height`), a `vertical`
+/// one carries its thickness on `width`.
+@mixin djui-separator($orientation: horizontal) {
+  // The drawn line — the `Separator` component and the wysiwyg `<hr>` — is the
+  // same line the segmented frames reveal through their gaps: one chain for
+  // width and colour, so `components.Separator.separator` / `.separatorColor`
+  // retune this one and the root `separator` / `separatorColor` retune all of
+  // them. The pre-rename `--djui-component-separator--color-rgb` hook stays one
+  // release as an inner fallback; its `--alpha` companion is gone — the line is
+  // opaque separator ink, like every other separator.
+  background-color: rgb(
+    var(
+      --djui-component-separator--separator-color-rgb,
+      var(--djui-component-separator--color-rgb, djui-separator-color())
+    )
+  );
+
+  @if $orientation == horizontal {
+    height: djui-separator-width(separator, row);
+  } @else {
+    width: djui-separator-width(separator, column);
+    height: auto;
+  }
+}
+
+/// WYSIWYG markdown content treatment. `$inline: true` emits the inline-only
+/// subset (links, inline code, bold, italic) for a text slot that renders
+/// inline markdown — InlineMarkdown, or a markdown-aware label/cell — dropping
+/// every block-level rule (line-height, headings, paragraphs, rules, lists,
+/// code blocks, blockquotes). The block form (default) is the full document
+/// treatment (Markdown).
+@mixin djui-wysiwyg-content($inline: false) {
+  @if not $inline {
+    line-height: 1.6;
+
+    // Heading voice hook: a theme with a display face points this at a
+    // `--djui-font-<slug>` token; unset, headings stay in the content font.
+    // Size/weight/line-height are declared (not inherited) because kit and
+    // consumer resets flatten headings — without an explicit ramp every
+    // level renders at 1em. Em-based so the ramp rides the content size.
+    h1, h2, h3, h4, h5, h6 {
+      &:not(:first-child) {
+        margin-top: 1rem;
+      }
+      margin-bottom: 0.5rem;
+      font-family: var(--djui-wysiwyg-heading-font-family, inherit);
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    h1 { font-size: 1.75em; }
+    h2 { font-size: 1.5em; }
+    h3 { font-size: 1.25em; }
+    h4 { font-size: 1.125em; }
+    h5 { font-size: 1em; }
+    h6 { font-size: 0.875em; }
+
+    p:not(:last-child) {
+      margin-bottom: 1rem;
+    }
+
+    hr {
+      @include djui-separator;
+      border: none;
+      &:not(:first-child) {
+        margin-top: 1.5rem;
+      }
+      margin-bottom: 1.5rem;
+    }
+
+    // A GFM task list carries no marker and hangs no indent — the checkbox is
+    // the marker. Selected by exclusion rather than by unsetting afterwards, so
+    // each value is still declared exactly once per element.
+    ul:not(.contains-task-list) {
+      list-style-type: disc;
+    }
+
+    ol {
+      list-style-type: decimal;
+    }
+
+    ul:not(.contains-task-list), ol {
+      padding-left: 1.5rem;
+    }
+
+    // Stated, not merely excluded above: excluding the task list from the
+    // marker and indent rules leaves it on whatever the browser says, which is
+    // a disc and a 40px indent today. The checkbox is the marker.
+    ul.contains-task-list {
+      list-style-type: none;
+      padding-left: 0;
+    }
+
+    ul, ol {
+      &:not(:last-child) {
+        margin-bottom: 1rem;
+      }
+    }
+
+    li.task-list-item input[type="checkbox"] {
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  em {
+    font-style: italic;
+  }
+
+  // GFM strikethrough (`~~struck~~`). Inline, so it belongs to both transforms —
+  // and `text-decoration` is one of the properties a reset zeroes, so the
+  // element cannot be left to the browser.
+  del,
+  s {
+    text-decoration: line-through;
+  }
+
+  // The rest of the text-level semantics the preflight flattens.
+  //
+  // These are here because prose is the one surface whose content djui does not
+  // author: it is arbitrary author HTML, so any semantic element may appear in
+  // it, and a `<sup>` that renders identically to body text has lost the only
+  // cue a sighted reader gets. Outside prose the flattening is the intent
+  // (`reset.scss` says why); inside it, every element that carries meaning
+  // visually has to carry it visibly.
+  ins,
+  u {
+    text-decoration: underline;
+  }
+
+  // Restated rather than left to the UA, because `vertical-align: baseline` and
+  // `font: inherit` between them remove both halves of the native rendering. The
+  // `line-height: 0` is what stops a raised or lowered run from opening up the
+  // line it sits in.
+  sub,
+  sup {
+    font-size: 0.75em;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+
+  sup {
+    top: -0.5em;
+  }
+
+  sub {
+    bottom: -0.25em;
+  }
+
+  // The UA paints `<mark>` with the `Mark` / `MarkText` **system** colours,
+  // which is why an unstyled highlight survives forced-colors mode for free.
+  // Restating it with theme tokens would throw that away, so the system pair
+  // stays and the theme does not get a say here.
+  mark {
+    background-color: Mark;
+    color: MarkText;
+  }
+
+  // The dotted underline is the only affordance that a title tooltip exists.
+  abbr[title] {
+    text-decoration: underline dotted;
+    cursor: help;
+  }
+
+  kbd,
+  samp {
+    @include djui-inline-code;
+  }
+
+  small {
+    font-size: 0.875em;
+  }
+
+
+  a {
+    @include djui-link;
+  }
+
+  code {
+    @include djui-inline-code;
+  }
+
+  @if not $inline {
+    pre {
+      @include djui-code-block;
+      &:not(:first-child) {
+        margin-top: 1rem;
+      }
+      &:not(:last-child) {
+        margin-bottom: 1rem;
+      }
+    }
+
+    blockquote {
+      @include djui-blockquote;
+      &:not(:first-child) {
+        margin-top: 1rem;
+      }
+      &:not(:last-child) {
+        margin-bottom: 1rem;
+      }
+    }
+
+    // GFM tables. The parser runs with GFM on, so `| a | b |` renders real
+    // `<table>` markup — and nothing in the kit styled a single table element,
+    // so these have been living entirely on browser defaults. Without them the
+    // rows collapse into an undelimited run of text.
+    //
+    // The rules are split across two edges rather than bordering every cell and
+    // switching one off: the header owns its underline, body cells own the line
+    // above them. Under `border-collapse` the header's bottom and the first
+    // row's top merge into one, and the last row ends without a trailing rule —
+    // no `:last-child` exception to override anything.
+    table {
+      width: 100%;
+      border-collapse: collapse;
+
+      &:not(:first-child) {
+        margin-top: 1rem;
+      }
+      &:not(:last-child) {
+        margin-bottom: 1rem;
+      }
+    }
+
+    // Column alignment arrives as GFM's `align` attribute, which the browser
+    // applies as a *presentational hint* — and a presentational hint loses to
+    // any author rule at all. So a plain `th, td { text-align: … }` would
+    // silently flatten every right-aligned numeric column in the corpus. The
+    // alignment is read from a variable instead, and the `[align]` rules
+    // reassign it: one declaration of the property, no override, and the
+    // markdown's own intent survives. Re-declared on every cell so a nested
+    // table can't inherit an ancestor cell's alignment.
+    th,
+    td {
+      --djui-wysiwyg-cell-text-align: initial;
+      padding: 0.375em 0.625em;
+      text-align: var(--djui-wysiwyg-cell-text-align, start);
+    }
+
+    th {
+      font-weight: 600;
+      border-bottom: djui-separator-width() solid
+        rgba(
+          var(--djui-wysiwyg-table-border-color-rgb, var(--djui-foreground-primary-rgb)),
+          var(--djui-wysiwyg-table-border-alpha, 0.2)
+        );
+    }
+
+    td {
+      border-top: djui-separator-width() solid
+        rgba(
+          var(--djui-wysiwyg-table-border-color-rgb, var(--djui-foreground-primary-rgb)),
+          var(--djui-wysiwyg-table-border-alpha, 0.2)
+        );
+    }
+
+    th[align="left"],
+    td[align="left"] {
+      --djui-wysiwyg-cell-text-align: left;
+    }
+
+    th[align="center"],
+    td[align="center"] {
+      --djui-wysiwyg-cell-text-align: center;
+    }
+
+    th[align="right"],
+    td[align="right"] {
+      --djui-wysiwyg-cell-text-align: right;
+    }
+  }
+}
+
+/**
+ * Selectable item
+ *
+ * Resting/idle state for list-like components with a selected item
+ * (NavigationItem, Tabs, …). The *active* item's appearance is the shared
+ * Layer 1 fill bodies (djui-background-soft/-solid/...) composed under the
+ * component's `--active` selector — so selection looks exactly like a filled
+ * chip, defined once. This is a composition, not a single `$kind: selectable`
+ * orchestrator, because the consumers' topologies differ: NavigationItem keeps
+ * variant/colored/active on one element, while Tabs splits variant/colored onto
+ * the root and `--active` onto a child tab. Each wires its own selectors (with
+ * `:not(--colored)` discipline, plus `:not(--folder)` for Tabs) and calls the
+ * shared bodies.
+ */
+
+/// Resting (unselected) appearance, in the two halves every state-carrying
+/// mixin in this file ships as (see `djui-input-base`): `-style` is declarations
+/// only, `-states` the nested rules, and the bare name both in that order —
+/// include it LAST in the host block. Cursor on every item, and the idle look —
+/// transparent, dimmed text, hover/active back to full — scoped to
+/// `:not(&--active)` so the active item's fill is never set-then-overridden.
+/// Include it on the element that carries the `--active` modifier (the active
+/// selector is derived from `&`, so nothing is passed).
+///
+/// The keyboard ring is the item's own. Every selectable is a focus target — a
+/// tab, a page number, a navigation link — and the ring's declaration has to
+/// sit among the item's declarations: a `djui-focus-ring` include after this
+/// mixin used to land its `outline` behind the idle rule and split the host
+/// block in two. `$ring-offset` is passed through; negative (inset) where an
+/// outset ring would be clipped (Tabs' scrolling strip).
+@mixin djui-selectable-base-style($ring-offset: 0.125rem, $weight: inherit) {
+  // Tabs' and Pagination's items are real `<button>`s, so the family owns their
+  // edge; fill and ink are declared below, per selected state. The *size* half is
+  // deliberately not here — these items declare their own, and a mixin included
+  // after a component's own declaration wins the block. Each family member
+  // includes `djui-native-control-type` itself, first in its block.
+  @include djui-native-control-box($background: null);
+
+  // The weight channel. Every member of this family — a tab, a page number, a
+  // navigation link — used to say "selected" in colour alone, which WCAG 1.4.1
+  // does not accept and a greyscale screenshot settles in a second. The
+  // declaration is here, once, so the family owns it; the *claim* is each
+  // component's own (`djui-cue-selected`, below, which carries the reasoning for
+  // where it goes).
+  //
+  // The slot is deliberately NOT re-declared `initial`, unlike the state slots:
+  // the thickening has to reach the text, which is usually a composed child's
+  // (an `IconLabel`'s label) rather than this element's own.
+  //
+  // `$weight` is the resting value for a family that has one of its own
+  // (Pagination's digits). It reaches the property through the `var()` fallback,
+  // where the default `inherit` is a CSS-wide keyword that cannot survive
+  // substitution — so an unclaimed slot leaves the declaration
+  // invalid-at-computed-value-time, and an inherited property inherits. Which is
+  // exactly what `inherit` meant. The ink beside it resolves the same way.
+  font-weight: var(--djui-cue-weight-resolved, #{$weight});
+
+  // Resting pointer, plus the slots a disabled item claims (Pagination's
+  // controls go inert at the ends of the range).
+  @include djui-disabled-slots($cursor: pointer);
+
+  // Fill and ink are declared HERE, once, and every other block on the item only
+  // assigns into them — the idle rule in the states half, the `djui-background-*`
+  // variant a selected item wears, and the family's own `--segmented` context
+  // rules.
+  //
+  // They used to be declared per state, which read as one declaration each
+  // because the states are mutually exclusive. They are not mutually exclusive
+  // with the *base* block, though, and that is what made `DjuiTabs__tab ::
+  // color` and `DjuiPagination__item :: background-color` four-deep once the
+  // reset started declaring both properties too. Same reasoning as
+  // `djui-background-slots`, which this deliberately mirrors; the ink rests at
+  // `inherit` rather than at a colour, so an item still takes its voice from
+  // context when nothing claims the slot.
+  --djui-background-resolved: initial;
+  --djui-foreground-resolved: initial;
+  background-color: var(--djui-background-resolved, transparent);
+  color: var(--djui-foreground-resolved, inherit);
+
+  @include djui-focus-ring-style($offset: $ring-offset);
+}
+
+/// The states half: the ring claim, and the idle look with its hover/press
+/// return to full ink.
+@mixin djui-selectable-base-states($component: null) {
+  &:focus-visible {
+    @include djui-focus-ring-claim;
+  }
+
+  &:not(#{&}--active) {
+    --djui-foreground-resolved: rgba(var(--djui-foreground-primary-rgb), #{djui-alpha(djui-idle-alpha-step($component))});
+
+    @include djui-hover {
+      --djui-foreground-resolved: #{color.get(foreground, primary)};
+    }
+
+    &:active {
+      --djui-foreground-resolved: #{color.get(foreground, primary)};
+    }
+  }
+}
+
+/// The selected item's non-colour cue: claim the weight slot the selectable
+/// family declares, so a selected tab / page / navigation item thickens as well
+/// as fills.
+///
+/// Included in each of a family's mutually exclusive selected-fill rules rather
+/// than once in a rule of its own, and that is a cascade-budget decision rather
+/// than a stylistic one: those rules already match only the selected item and
+/// are already counted, while a separate `--active` rule would be a third
+/// component rule block on an element the kit budgets at two. It reads as the
+/// intended thing either way — each pairing states
+/// the complete selected treatment, fill, ink and weight together. A family that
+/// already writes an `--active` rule for another reason (Pagination's cursor)
+/// claims the slot there instead, for free.
+@mixin djui-cue-selected($weight: 600) {
+  --djui-cue-weight-resolved: #{$weight};
+}
+
+/// The usual form: both halves, in order. Include it LAST in the host block.
+@mixin djui-selectable-base($ring-offset: 0.125rem, $weight: inherit, $component: null) {
+  @include djui-selectable-base-style($ring-offset, $weight);
+  @include djui-selectable-base-states($component);
+}
+
+@mixin horizontal-scroll-fade($color-from, $color-to, $padding: 1rem) {
+  position: relative;
+
+  &:before,
+  &:after {
+    content: "";
+    position: absolute;
+    top: -$padding;
+    bottom: -$padding;
+    width: 1rem;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  &:before {
+    left: -$padding;
+    background: linear-gradient(90deg, #{$color-from} 0%, #{$color-to} 100%);
+  }
+
+  &:after {
+    right: -$padding;
+    background: linear-gradient(270deg, #{$color-from} 0%, #{$color-to} 100%);
+  }
+}
+
+/**
+ * Off-canvas navigation
+ *
+ * The appearance half of a transforming navigation: content that lays out in
+ * its host from `small` up, and below `small` detaches into a fixed edge panel
+ * with a toggle. The behaviour half — the open state, the generated id, the
+ * `aria-expanded` / `aria-controls` pairing — is the `Collapsible` component,
+ * which renders nothing; a host includes these mixins on its OWN elements and
+ * spreads the Collapsible's records onto them. A stock djui component never
+ * styles another component's elements, so there is no shared panel component
+ * to reach into — every host owns its markup, its block, and these includes.
+ *
+ * The state travels by inheritance, on purpose. `djui-offcanvas-open` and
+ * `djui-offcanvas-side-right` are included in blocks on the host's ROOT — the
+ * `--nav-open` modifier and its `[data-djui-state-nav-open]` twin (the
+ * attribute a no-JS consumer flips), the `--side-right` modifier — and assign
+ * custom properties that inherit into the panel, the toggle and its faces
+ * wherever the host put them: inside the panel (a toggle that rides its edge)
+ * or beside it (a static button in a header bar). That is what makes the
+ * toggle's placement the host's choice. The slots are component-qualified and
+ * are deliberately NOT firewalled with `initial` on the elements that read
+ * them, since the root's assignment is the whole mechanism.
+ *
+ * What none of this does is hide the panel from `small` up, or declare the
+ * toggle's `display`: both are screen-dependent decisions the host bands itself
+ * (`responsiveProperty`), because the host knows what its desktop looks like
+ * — a docked rail, an inline cluster — and the panel does not.
+ */
+
+/// The panel. Include on the element that, below `small`, becomes the fixed
+/// edge panel; from `small` up it declares nothing and the host's own rules
+/// stand. `$width` defaults to the host's navigation width, falling back to the
+/// Drawer's — one variable per host for the rail and the panel alike; a host
+/// that wants them to differ assigns it per band. `$background` is left to the
+/// host unless given: the shells paint the panel with the rail's own fill,
+/// declared once, and a band-scoped fill here would only fight it.
+///
+/// `visibility: hidden` rather than `inert`, scoped to the band: from `small`
+/// up the same content is live in the host while `open` is false, and an
+/// attribute cannot be scoped to a media query. This rule can, and buys the
+/// same removal from the tab order, the accessibility tree, pointer events,
+/// selection and find-in-page. It also covers the no-JS attribute path for free.
+@mixin djui-offcanvas-panel($component, $width: null, $background: null) {
+  @if $width == null {
+    $width: var(
+      --djui-component-#{$component}--navigation-width,
+      var(--djui-component-drawer--width, 240px)
+    );
+  }
+
+  @media (#{width-to(small)}) {
+    position: fixed;
+    top: 0;
+    left: var(--djui-component-#{$component}--offcanvas-left-resolved, 0);
+    right: var(--djui-component-#{$component}--offcanvas-right-resolved, auto);
+    width: $width;
+    height: 100%;
+    // Above the app chrome, below overlays (the layer ladder).
+    z-index: var(--djui-layer-drawer);
+
+    @if $background {
+      background-color: $background;
+    }
+
+    // Closed unless the root says otherwise: the open block assigns the
+    // resolved transform to `none`; the side-right block swaps the closed
+    // direction underneath it.
+    transform: var(
+      --djui-component-#{$component}--offcanvas-transform-resolved,
+      var(--djui-component-#{$component}--offcanvas-closed-transform, translateX(-100%))
+    );
+    visibility: var(--djui-component-#{$component}--offcanvas-visibility-resolved, hidden);
+  }
+}
+
+/// The open state. Include in the host's open block, on its root:
+///
+///   '&--nav-open, &[data-djui-state-nav-open]': { '@include djui-offcanvas-open(docs-template)': true }
+///
+/// Assignments only, never declarations (the state→slot model): the panel
+/// slides in and becomes visible, and the toggle's faces swap.
+@mixin djui-offcanvas-open($component) {
+  --djui-component-#{$component}--offcanvas-transform-resolved: none;
+  --djui-component-#{$component}--offcanvas-visibility-resolved: visible;
+  --djui-component-#{$component}--offcanvas-menu-face-display-resolved: none;
+  --djui-component-#{$component}--offcanvas-close-face-display-resolved: block;
+}
+
+/// The right-hand edge. Include in the host's `--side-right` block, on its
+/// root: the panel anchors to the right and slides out rightwards; an edge
+/// toggle rides the panel's leading (inner) edge instead of its trailing one.
+@mixin djui-offcanvas-side-right($component) {
+  --djui-component-#{$component}--offcanvas-left-resolved: auto;
+  --djui-component-#{$component}--offcanvas-right-resolved: 0;
+  --djui-component-#{$component}--offcanvas-closed-transform: translateX(100%);
+  --djui-component-#{$component}--offcanvas-toggle-left-resolved: auto;
+  --djui-component-#{$component}--offcanvas-toggle-right-resolved: 100%;
+}
+
+/// The toggle's own affordance and chrome — a bare `<button>` (or its inert
+/// `<div>` twin) that takes nothing from element rules. Two placements:
+/// `edge` (default) is a toggle INSIDE the panel that rides its outer edge —
+/// visible at the viewport corner while the panel is off-screen, sliding with
+/// it — positioned against the fixed panel, so it may sit inside the panel's
+/// scroller without being clipped by it. `static` is a toggle the host's own
+/// layout places, anywhere. The host declares `display` itself, banded: shown
+/// below `small`, `none` from `small` up.
+@mixin djui-offcanvas-toggle($component, $placement: edge) {
+  align-items: center;
+  justify-content: center;
+  @include djui-native-control-type;
+  @include djui-native-control-box;
+  cursor: pointer;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--djui-component-#{$component}--navigation-toggle-radius, 0.5rem);
+  // A closed panel is `visibility: hidden`, and the toggle is the one control
+  // that must stay reachable while it is — so it opts back in. Screen-
+  // independent, and harmless on a toggle that sits outside the panel.
+  visibility: visible;
+  // Last among the declarations: the ring include carries a nested
+  // `:focus-visible` rule, and a declaration after it would split this block.
+  @include djui-focus-ring;
+
+  @if $placement == edge {
+    @media (#{width-to(small)}) {
+      position: absolute;
+      top: 0;
+      left: var(--djui-component-#{$component}--offcanvas-toggle-left-resolved, 100%);
+      right: var(--djui-component-#{$component}--offcanvas-toggle-right-resolved, auto);
+      margin: 0.5rem;
+    }
+  }
+}
+
+/// One of the toggle's two faces: `menu` shows while the panel is closed,
+/// `close` while it is open. Declared once each, reading the slot the open
+/// block flips.
+@mixin djui-offcanvas-toggle-face($component, $face) {
+  @if $face != menu and $face != close {
+    @error "djui-offcanvas-toggle-face: `$face` must be `menu` or `close`, got `#{$face}`.";
+  }
+  $resting: none;
+  @if $face == menu {
+    $resting: block;
+  }
+  display: var(--djui-component-#{$component}--offcanvas-#{$face}-face-display-resolved, #{$resting});
+}
+
+// ─── Deprecated names, kept one release ───
+//
+// The 2026-08-28 vocabulary pass renamed the fill/ink slot pair to
+// background/foreground (the names the config and the CSS properties already
+// used) and `hairline` to `separator` (one concept, one component, one chain).
+// These forwards keep a consumer's existing includes compiling for one release;
+// they emit exactly what the new names emit and will be removed after it.
+@function djui-hairline($component: null, $axis: row) {
+  @return djui-separator-width($component, $axis);
+}
+@function djui-hairline-color($component: null) {
+  @return djui-separator-color($component);
+}
+@mixin djui-fill-slots { @include djui-background-slots; }
+@mixin djui-fill-soft($args...) { @include djui-background-soft($args...); }
+@mixin djui-fill-soft-colored($args...) { @include djui-background-soft-colored($args...); }
+@mixin djui-fill-solid($args...) { @include djui-background-solid($args...); }
+@mixin djui-fill-solid-colored($args...) { @include djui-background-solid-colored($args...); }
+@mixin djui-fill-surface($args...) { @include djui-background-surface($args...); }
+@mixin djui-fill-surface-colored($args...) { @include djui-background-surface-colored($args...); }
+@mixin djui-fill-modifiers($args...) { @include djui-background-modifiers($args...); }
+@mixin djui-fill-field-segment($args...) { @include djui-background-field-segment($args...); }
+

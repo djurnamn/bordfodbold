@@ -1,0 +1,55 @@
+@use "styles/color" as color;
+@use "layer-order";
+
+// In the BASE layer rather than the reset: the canvas states what the theme
+// says the page is, which is a statement of the same tier as the tokens beside
+// it — not a neutralisation of browser defaults.
+@layer djui.base {
+
+  // djui's page canvas: the typeface, the foreground and the ground, stated on the
+  // root. Separated from the base layer because these are the rules that say
+  // "djui owns this document" — they reach the host's own markup, not just djui's
+  // components — so they ship with the preflight rather than with the components.
+  //
+  // A consumer taking `djui/css` alone gets tokens and components, and djui's
+  // components inherit *their* type. That is the correct behaviour for embedding:
+  // inheritance is the one channel the reset design deliberately keeps, so the
+  // host's voice flows into the kit rather than being overridden by it.
+  // ─── The page canvas ───
+
+  html {
+    // The root typeface is a theme token (`config.font.default`, emitted as
+    // `--djui-font-default`, which itself resolves to a `--djui-font-<family>`
+    // stack token). The bare `sans-serif` is only a last resort for a theme that
+    // declares no `font` at all — the real fallbacks live in the stack token.
+    font-family: var(--djui-font-default, sans-serif);
+    // The document's line-height, stated once and inherited everywhere.
+    //
+    // This closes a hole the reset makes load-bearing: with `font: inherit` on
+    // `*`, every element's leading comes from here, and before this rule the kit
+    // set `line-height` nowhere on the root at all — so the whole document ran
+    // on `normal`, i.e. on whatever the font's own metrics happened to say. The
+    // default theme ships a `size-adjust: 172%` Dongle with hand-tuned
+    // ascent/descent overrides precisely to keep that sane, which is invisible
+    // machinery and one font swap away from breaking.
+    //
+    // The body ramp's leading is the right value because it is the one every
+    // other typography variant is a deviation from; a variant that states its
+    // own still wins, in the components layer.
+    line-height: var(--djui-typography-body-line-height, 1.5);
+    color: color.get(foreground, primary);
+    // The page paints the ground: `surface-0`, the level the generator extends
+    // below the scale's base by one step, so the page sits one step below
+    // anything a region can pin — an unpinned surface, a level-1 region, a
+    // separator drawn in the base colour all read against it by rule. A theme
+    // that wants a ground apart from its ramp states `backdrop`, which only
+    // repaints the page (level 0 stays the floor the relative channels reach).
+    background-color: rgb(var(--djui-backdrop-rgb, var(--djui-surface-0-rgb)));
+    // Reserve the scrollbar's gutter whether or not the page scrolls, so the
+    // layout does not shift by a scrollbar's width between a short page and a
+    // long one. The modern form of the old `overflow-y: scroll` trick: it
+    // reserves the space without drawing a scrollbar on a page that has nothing
+    // to scroll. A canvas opinion, so it lives with the canvas, not the reset.
+    scrollbar-gutter: stable;
+  }
+}

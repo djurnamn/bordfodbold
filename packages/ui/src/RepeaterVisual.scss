@@ -1,0 +1,158 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/color" as color;
+@use "styles/typography" as *;
+
+@layer djui.components {
+  .DjuiRepeater {
+    @include djui-surface(repeater, $padding: false);
+    width: 100%;
+
+    &__container {
+      @include djui-focus-ring-style($color: rgb(var(--djui-context-negative-rgb)), $family: "form");
+      display: grid;
+      grid-template-columns: var(--djui-component-repeater--columns);
+      gap: var(--djui-component-repeater--gap, 0.5rem);
+      padding: var(--djui-component-repeater--inset, 0.5rem) var(--djui-component-repeater--inset, 0.5rem) 0;
+      min-width: 100%;
+      border-radius: inherit;
+    }
+
+    &__head {
+      display: contents;
+      border-radius: inherit;
+    }
+
+    &__body {
+      display: contents;
+      border-radius: inherit;
+    }
+
+    &__row {
+      display: contents;
+      border-radius: inherit;
+    }
+
+    &__add-cell {
+      display: contents;
+    }
+
+    &__row--sortable {
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: subgrid;
+      align-items: stretch;
+
+      &[data-dnd-dragging] {
+        grid-template-columns: var(--djui-component-repeater--columns);
+        gap: var(--djui-component-repeater--gap, 0.5rem);
+        opacity: 0.5;
+      }
+    }
+
+    &__cell {
+      display: flex;
+      align-items: center;
+      min-height: 3rem;
+      --djui-component-repeater--cell-padding-resolved: initial;
+      padding: var(--djui-component-repeater--cell-padding-resolved, 0);
+    }
+
+    &__cell > * {
+      flex-grow: 1;
+      min-width: 0;
+    }
+
+    &__cell--actions {
+      display: grid;
+      min-width: 2rem;
+    }
+
+    &__cell--handle {
+      display: grid;
+      cursor: grab;
+      min-width: 2rem;
+    }
+
+    &__head &__cell {
+      min-height: unset;
+      background-color: rgb(var(--djui-component-repeater--header-surface-rgb, var(--djui-current-surface-rgb)));
+      @include djui-typography(label);
+    }
+
+    &__add {
+      grid-column: 1 / -1;
+      display: grid;
+      justify-items: var(--djui-component-repeater--add-align, stretch);
+      align-items: stretch;
+      min-height: 3rem;
+      margin-left: calc(-1 * var(--djui-component-repeater--inset, 0.5rem));
+      margin-right: calc(-1 * var(--djui-component-repeater--inset, 0.5rem));
+      border-bottom-left-radius: inherit;
+      border-bottom-right-radius: inherit;
+    }
+
+    &__cell &__control, &__add &__control {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 3rem;
+    }
+
+    &__control {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border-radius: inherit;
+      @include djui-native-control-type($font-size: null, $color: null);
+      @include djui-native-control-box($background: null);
+      @include djui-disabled-slots($cursor: pointer);
+      --djui-component-icon--size: 1em;
+      --djui-background-resolved: initial;
+      background-color: var(--djui-background-resolved, transparent);
+      @include djui-focus-ring($offset: -0.125rem);
+      @include djui-hover {
+        --djui-background-resolved: rgb(var(--djui-next-surface-1-rgb));
+      }
+    }
+
+    &__announcement {
+      @include djui-visually-hidden;
+    }
+
+    &__grip {
+      --djui-cursor-resolved: grab;
+      color: rgba(var(--djui-foreground-primary-rgb), 0.5);
+    }
+
+    &--segmented {
+      @include djui-surface-segmented(repeater);
+      padding: 0;
+      --djui-component-repeater--inset: 0;
+      --djui-component-repeater--gap: #{djui-separator-width(repeater)};
+    }
+
+    &--segmented &__cell {
+      @include djui-surface-cell;
+      --djui-component-repeater--cell-padding-resolved: 0.5rem;
+    }
+
+    &--segmented &__cell--actions, &--segmented &__cell--handle {
+      --djui-component-repeater--cell-padding-resolved: 0;
+    }
+
+    &--segmented &__add {
+      @include djui-surface-cell;
+      padding: 0;
+    }
+
+    &--segmented &__container > &__head:first-child > &__row:first-child > &__cell:first-child, &--segmented &__container > &__body:first-child > &__row:first-child > &__cell:first-child {
+      border-top-left-radius: inherit;
+    }
+
+    &--segmented &__container > &__head:first-child > &__row:first-child > &__cell:last-child, &--segmented &__container > &__body:first-child > &__row:first-child > &__cell:last-child {
+      border-top-right-radius: inherit;
+    }
+  }
+}

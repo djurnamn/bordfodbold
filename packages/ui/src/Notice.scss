@@ -1,0 +1,95 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/color" as color;
+@use "styles/typography" as *;
+
+@layer djui.components {
+  .DjuiNotice {
+    @include djui-surface($padding: 0.75rem 1rem, $elevation: false);
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    color: color.get(foreground, primary);
+
+    &--soft#{&}--success {
+      background-color: rgba(var(--djui-context-positive-rgb), var(--djui-current-alpha-soft, var(--djui-alpha-soft)));
+    }
+
+    &--soft#{&}--error {
+      background-color: rgba(var(--djui-context-negative-rgb), var(--djui-current-alpha-soft, var(--djui-alpha-soft)));
+    }
+
+    &--soft#{&}--warning {
+      background-color: rgba(var(--djui-context-warning-rgb), var(--djui-current-alpha-soft, var(--djui-alpha-soft)));
+    }
+
+    &--soft#{&}--info {
+      background-color: rgba(var(--djui-context-info-rgb), var(--djui-current-alpha-soft, var(--djui-alpha-soft)));
+    }
+
+    &--solid#{&}--success {
+      background-color: color.get(context, positive);
+      color: color.get(foreground, contrast);
+    }
+
+    &--solid#{&}--error {
+      background-color: color.get(context, negative);
+      color: color.get(foreground, contrast);
+    }
+
+    &--solid#{&}--warning {
+      background-color: color.get(context, warning);
+      color: color.get(foreground, contrast);
+    }
+
+    &--solid#{&}--info {
+      background-color: color.get(context, info);
+      color: color.get(foreground, contrast);
+    }
+
+    &--elevated {
+      @include djui-shadow(overlay);
+    }
+
+    &__icon {
+      flex: 0 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    &__content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    &__title {
+      @include djui-typography(body);
+      line-height: 1.25;
+    }
+
+    &__description {
+      @include djui-typography(caption);
+      opacity: 0.85;
+    }
+
+    &__description:not(:empty) {
+      margin-top: 0.25rem;
+    }
+
+    &__action-button, &__cancel-button {
+      @include djui-native-control-box;
+      @include djui-typography(small);
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      cursor: pointer;
+    }
+
+    &__close-button {
+      @include djui-native-control-type;
+      @include djui-native-control-box;
+      cursor: pointer;
+    }
+  }
+}

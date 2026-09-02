@@ -1,0 +1,19 @@
+// Indirection layer between `global.scss` and the generated config.
+//
+// djui's `global.scss` does `@use "djui-config" as *;`. Because this file
+// is NOT next to `global.scss` (it lives one directory up), sass can't
+// resolve it relative to the importer and instead falls back to loadPaths.
+// That's the seam consumers use to swap in their own config:
+//
+//   // consumer-vite.config.ts
+//   css: { preprocessorOptions: { scss: {
+//     loadPaths: [
+//       "my-app/src",          // <-- contains a custom djui-config.scss
+//       "node_modules/djui/src",
+//     ]
+//   }}}
+//
+// With the consumer's path first, sass finds the consumer's
+// `djui-config.scss` (which `@forward`s their own `generated/config.scss`)
+// and the rest of djui transparently picks up consumer values.
+@forward "styles/generated/config";

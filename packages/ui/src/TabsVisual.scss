@@ -1,0 +1,121 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/color" as color;
+@use "styles/typography" as *;
+
+@layer djui.components {
+  .DjuiTabs {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    &__header {
+      font-size: var(--djui-component-tabs--size, 1rem);
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+
+    &__tabs {
+      display: flex;
+    }
+
+    &__tab {
+      @include djui-native-control-type($color: null, $font-weight: null);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375em;
+      padding: 0.5em 1em;
+      white-space: nowrap;
+      border-radius: 0.5rem;
+      flex: 0 0 auto;
+      @include djui-selectable-base($ring-offset: -0.125rem, $component: "tabs");
+    }
+
+    &:not(.DjuiTabs--folder):not(.DjuiTabs--solid):not(.DjuiTabs--colored) &__tab--active {
+      @include djui-background-soft($component: "tabs");
+      @include djui-cue-selected;
+    }
+
+    &:not(.DjuiTabs--folder):not(.DjuiTabs--solid).DjuiTabs--colored &__tab--active {
+      @include djui-background-soft-colored($component: "tabs");
+      @include djui-cue-selected;
+    }
+
+    &:not(.DjuiTabs--folder).DjuiTabs--solid:not(.DjuiTabs--colored) &__tab--active {
+      @include djui-background-solid;
+      @include djui-cue-selected;
+    }
+
+    &:not(.DjuiTabs--folder).DjuiTabs--solid.DjuiTabs--colored &__tab--active {
+      @include djui-background-solid-colored;
+      @include djui-cue-selected;
+    }
+
+    &__content {
+      @include djui-typography(body);
+    }
+
+    &--folder {
+      gap: 0;
+
+      & .DjuiTabs__header {
+        padding-top: 0;
+        background-color: rgb(var(--djui-current-surface-rgb));
+      }
+
+      & .DjuiTabs__tabs {
+        padding: 0 1em;
+      }
+
+      & .DjuiTabs__tab {
+        @include djui-typography(label);
+        padding: 0.625em 1em;
+        border-radius: 0.5rem 0.5rem 0 0;
+        margin-top: var(--djui-cue-lift-resolved, 0.25rem);
+
+        &--active {
+          --djui-cue-lift-resolved: 0;
+          --djui-foreground-resolved: #{color.get(foreground, primary)};
+          --djui-cursor-resolved: default;
+        }
+      }
+
+      & .DjuiTabs__content {
+        padding: 1rem;
+      }
+    }
+
+    &--folder:not(.DjuiTabs--surface-previous) {
+      & .DjuiTabs__tab--active, & .DjuiTabs__content {
+        background-color: rgb(var(--djui-next-surface-1-rgb));
+      }
+    }
+
+    &--folder.DjuiTabs--surface-previous {
+      & .DjuiTabs__tab--active, & .DjuiTabs__content {
+        background-color: rgb(var(--djui-previous-surface-1-rgb));
+      }
+    }
+
+    &__content--standalone {
+      padding: 1rem;
+    }
+
+    &__content--standalone:not(.DjuiTabs__content--surface-previous):not(.DjuiTabs__content--surface-current) {
+      background-color: rgb(var(--djui-next-surface-1-rgb));
+    }
+
+    &__content--standalone.DjuiTabs__content--surface-previous {
+      background-color: rgb(var(--djui-previous-surface-1-rgb));
+    }
+
+    &__content--standalone.DjuiTabs__content--surface-current {
+      background-color: rgb(var(--djui-current-surface-rgb));
+    }
+  }
+}
