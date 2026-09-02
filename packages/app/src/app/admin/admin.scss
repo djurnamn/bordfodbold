@@ -11,11 +11,16 @@
     padding: 2rem;
   }
 
+  // Panels sit straight on the page; the tables inside are the first surface
+  // step up from the canvas.
   &__panel {
-    @include djui.djui-surface;
     display: grid;
     gap: 1rem;
     min-width: 0;
+  }
+
+  &__panel--surface {
+    @include djui.djui-surface;
   }
 
   &__help {
@@ -35,5 +40,10 @@
     letter-spacing: 0.12em;
     opacity: 0.6;
     margin: 0.5rem 0 0;
+    padding-left: 1rem;
+  }
+
+  &__help {
+    padding-left: 1rem;
   }
 }

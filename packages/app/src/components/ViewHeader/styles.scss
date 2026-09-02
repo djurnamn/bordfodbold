@@ -1,18 +1,24 @@
 @use "styles/mixins" as djui;
 
-.BoardHeader {
+.ViewHeader {
   display: grid;
   gap: 0.75rem 1.5rem;
-  align-items: end;
-  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  // Narrow: the title on its own row, then the live indicator left and the
+  // menu right. Wide: everything on one row.
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
-    "titles"
-    "status"
-    "actions";
+    "titles titles"
+    "status actions";
 
   @media (#{djui.width-from(medium)}) {
     grid-template-columns: 1fr auto auto;
     grid-template-areas: "titles status actions";
+  }
+
+  &--menuless {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "titles status";
   }
 
   &__titles {
@@ -27,6 +33,7 @@
     text-transform: uppercase;
     letter-spacing: 0.12em;
     opacity: 0.6;
+    padding-left: 1rem;
   }
 
   &__title {
@@ -39,25 +46,37 @@
 
   &__status {
     grid-area: status;
+    display: grid;
+    gap: 0.25rem;
+    justify-items: start;
+
+    @media (#{djui.width-from(medium)}) {
+      justify-items: end;
+    }
+  }
+
+  &--menuless &__status {
+    justify-items: end;
   }
 
   &__actions {
     grid-area: actions;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 1rem;
     flex-wrap: wrap;
   }
 
-  &__link {
-    @include djui.djui-typography(label);
-    color: djui.get(foreground, primary);
-    text-decoration: none;
-    opacity: 0.7;
+  &__menu {
+    display: grid;
+    gap: 1.5rem;
+    align-content: start;
+    min-width: 14rem;
+  }
 
-    &:hover {
-      opacity: 1;
-      text-decoration: underline;
-    }
+  &__menuMode {
+    padding-top: 1rem;
+    border-top: 1px solid djui.get(foreground, primary, 0.1);
   }
 }

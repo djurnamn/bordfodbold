@@ -1,7 +1,7 @@
 "use client";
 
 import { teamColors, type Team, type TeamColor } from "@bordfodbold/domain";
-import { Button, Field, Modal, Notice, TextInput } from "@bordfodbold/ui";
+import { Button, Field, Modal, Notice, Repeater, TextInput, type RepeaterRow } from "@bordfodbold/ui";
 import { useEffect, useState, type FormEvent } from "react";
 import { createBem } from "use-bem";
 
@@ -20,7 +20,7 @@ interface TeamDialogProps {
 
 const maximumMembers = 4;
 
-/** Name, members, colour and emblem. Everything a team is recognised by. */
+/** Name, members, color and emblem. Everything a team is recognized by. */
 export function TeamDialog({ team, creating, pending, onSave, onClose }: TeamDialogProps) {
   const bem = createBem("TeamDialog");
   const [draft, setDraft] = useState<Team | null>(team);
@@ -36,8 +36,7 @@ export function TeamDialog({ team, creating, pending, onSave, onClose }: TeamDia
   }
 
   const update = (patch: Partial<Team>) => setDraft((current) => (current === null ? null : { ...current, ...patch }));
-  const setMember = (index: number, value: string) =>
-    update({ members: draft.members.map((member, candidate) => (candidate === index ? value : member)) });
+  const memberRows: RepeaterRow[] = draft.members.map((name, index) => ({ id: `member-${index}`, name }));
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
@@ -60,24 +59,25 @@ export function TeamDialog({ team, creating, pending, onSave, onClose }: TeamDia
           )}
         </Field>
 
-        <fieldset className={bem("group")}>
-          <legend className={bem("legend")}>Members</legend>
-          <div className={bem("members")}>
-            {draft.members.map((member, index) => (
-              <div key={index} className={bem("member")}>
-                <TextInput value={member} placeholder={`Member ${index + 1}`} aria-label={`Member ${index + 1}`} onChange={(event) => setMember(index, event.currentTarget.value)} maxLength={40} />
-                <Button label="Remove" variant="plain" size={0.8} onClick={() => update({ members: draft.members.filter((_, candidate) => candidate !== index) })} />
-              </div>
-            ))}
-            {draft.members.length < maximumMembers && (
-              <Button label="Add member" variant="soft" size={0.9} onClick={() => update({ members: [...draft.members, ""] })} />
+        <Field label="Members" grouped>
+          <Repeater
+            value={memberRows}
+            onChange={(rows) => update({ members: rows.map((row) => String(row.name ?? "")) })}
+            columns={[{ key: "name", label: "Member" }]}
+            renderCell={(_column, row, _index, setField, controlProps) => (
+              <TextInput {...controlProps} value={String(row.name ?? "")} placeholder="Name" maxLength={40} onChange={(event) => setField("name", event.currentTarget.value)} />
             )}
-          </div>
-        </fieldset>
+            hideHeader
+            variant="segmented"
+            separators="rows"
+            maxRows={maximumMembers}
+            translations={{ add: "Add member", removeRow: "Remove member" }}
+          />
+        </Field>
 
-        <fieldset className={bem("group")}>
-          <legend className={bem("legend")}>Colour</legend>
-          <div className={bem("swatches")} role="radiogroup" aria-label="Team colour">
+        <Field label="Color" grouped>
+          {({ labelledBy }) => (
+          <div className={bem("swatches")} role="radiogroup" aria-labelledby={labelledBy}>
             {teamColors.map((color: TeamColor) => (
               <button
                 key={color}
@@ -91,21 +91,20 @@ export function TeamDialog({ team, creating, pending, onSave, onClose }: TeamDia
               />
             ))}
           </div>
-        </fieldset>
+          )}
+        </Field>
 
-        <fieldset className={bem("group")}>
-          <legend className={bem("legend")}>Emblem</legend>
-          <div className={bem("emblems")} role="radiogroup" aria-label="Team emblem">
+        <Field label="Emblem" grouped>
+          {({ labelledBy }) => (
+          <div className={bem("emblems")} role="radiogroup" aria-labelledby={labelledBy}>
             {emblems.map((emblem) => (
               <button key={emblem} type="button" role="radio" aria-checked={draft.emblem === emblem} aria-label={emblem} className={bem("emblem", { selected: draft.emblem === emblem })} onClick={() => update({ emblem })}>
                 {emblem}
               </button>
             ))}
           </div>
-          <Field label="Or any emoji" grouped>
-            {({ id, className }) => <TextInput id={id} className={className} value={draft.emblem} maxLength={4} size={1} onChange={(event) => update({ emblem: event.currentTarget.value.trim() || "⚽" })} />}
-          </Field>
-        </fieldset>
+          )}
+        </Field>
 
         {failure !== null && <Notice context="error">{failure}</Notice>}
 

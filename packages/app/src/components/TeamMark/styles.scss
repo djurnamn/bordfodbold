@@ -18,6 +18,10 @@
     font-size: 1.125em;
   }
 
+  &--emblemEnd {
+    flex-direction: row-reverse;
+  }
+
   &__emblem {
     display: inline-grid;
     place-items: center;
@@ -40,6 +44,12 @@
     white-space: nowrap;
 
     &--hidden {
+      @include djui.djui-visually-hidden;
+    }
+  }
+
+  @media (#{djui.width-to(small)}) {
+    &--hideNameBelow-small &__name {
       @include djui.djui-visually-hidden;
     }
   }

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { createBem } from "use-bem";
 
 import { ActivityFeed } from "@/components/ActivityFeed";
-import { BoardHeader } from "@/components/BoardHeader";
+import { ViewHeader } from "@/components/ViewHeader";
 import { ScoreDialog } from "@/components/ScoreDialog";
 import { SettingsForm } from "@/components/SettingsForm";
 import { TeamList } from "@/components/TeamList";
@@ -24,7 +24,7 @@ export function Admin() {
 
   return (
     <div className={bem()}>
-      <BoardHeader kicker="Admin · every change goes live" title={tournament.name} updatedAt={tournament.updatedAt} actions={<Button label="Lock" variant="plain" size={0.9} onClick={commands.lock} />} />
+      <ViewHeader kicker="Admin · manage your tournament" title={tournament.name} updatedAt={tournament.updatedAt} />
 
       <Tabs defaultValue="results" className={bem("tabs")}>
         <TabList>
@@ -52,8 +52,8 @@ export function Admin() {
         </TabPanel>
 
         <TabPanel value="settings">
-          <section className={bem("panel")}>
-            <SettingsForm tournament={tournament} pending={pending} onRename={commands.renameTournament} onUpdateSettings={commands.updateSettings} onReset={commands.reset} onLock={commands.lock} />
+          <section className={bem("panel", { surface: true })}>
+            <SettingsForm tournament={tournament} pending={pending} onRename={commands.renameTournament} onUpdateSettings={commands.updateSettings} onReset={commands.reset} onLoadDemoData={commands.loadDemoData} onLock={commands.lock} />
           </section>
         </TabPanel>
       </Tabs>

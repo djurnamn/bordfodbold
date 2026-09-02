@@ -5,6 +5,7 @@ import { Button, Modal, Notice, NumberInput } from "@bordfodbold/ui";
 import { useEffect, useState, type FormEvent } from "react";
 import { createBem } from "use-bem";
 
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { TeamMark } from "@/components/TeamMark";
 import "./styles.scss";
 
@@ -71,10 +72,7 @@ export function ScoreDialog({ tournament, match, pending, onSave, onClose }: Sco
   };
 
   const clear = async () => {
-    if (!confirmingClear) {
-      setConfirmingClear(true);
-      return;
-    }
+    setConfirmingClear(false);
     try {
       await onSave(match.id, null);
       onClose();
@@ -110,15 +108,10 @@ export function ScoreDialog({ tournament, match, pending, onSave, onClose }: Sco
             The board shows {match.homeScore}–{match.awayScore}. Save again to replace it; the change is logged.
           </Notice>
         )}
-        {confirmingClear && (
-          <Notice context="warning" title="Clear this result?">
-            The match goes back to unplayed. Press Clear again to confirm.
-          </Notice>
-        )}
         {failure !== null && <Notice context="error">{failure}</Notice>}
 
         <div className={bem("actions")}>
-          {played && <Button label={confirmingClear ? "Clear, I am sure" : "Clear result"} variant="plain" color="context-negative" onClick={clear} disabled={pending} />}
+          {played && <Button label="Clear result" variant="plain" color="context-negative" onClick={() => setConfirmingClear(true)} disabled={pending} />}
           <span className={bem("spacer")} />
           <Button label="Cancel" variant="plain" onClick={onClose} />
           <Button
@@ -129,6 +122,9 @@ export function ScoreDialog({ tournament, match, pending, onSave, onClose }: Sco
           />
         </div>
       </form>
+      <ConfirmDialog open={confirmingClear} title="Clear this result?" confirmLabel="Clear result" destructive onCancel={() => setConfirmingClear(false)} onConfirm={clear}>
+        {homeTeam.name} {match.homeScore}–{match.awayScore} {awayTeam.name} goes back to unplayed. The change is logged and can be undone.
+      </ConfirmDialog>
     </Modal>
   );
 }
@@ -146,7 +142,7 @@ function ScoreSide({ bem, team, value, max, winner, onChange }: ScoreSideProps) 
   return (
     <div className={bem("side", { winner })}>
       <TeamMark team={team} />
-      <NumberInput stepper size={2.25} min={0} max={max} value={value} onChange={onChange} inputProps={{ "aria-label": `${team.name} goals`, inputMode: "numeric" }} />
+      <NumberInput stepper min={0} max={max} value={value} onChange={onChange} inputProps={{ "aria-label": `${team.name} goals`, inputMode: "numeric" }} />
       <Button label={`${max}`} variant="soft" size={0.8} onClick={() => onChange(max)} aria-label={`${team.name} wins with ${max}`} />
     </div>
   );

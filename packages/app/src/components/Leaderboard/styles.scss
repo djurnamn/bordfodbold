@@ -1,59 +1,37 @@
 @use "styles/mixins" as djui;
 
 .Leaderboard {
-  width: 100%;
-  border-collapse: collapse;
   @include djui.djui-typography(body);
 
-  &__head th {
-    @include djui.djui-typography(caption);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    opacity: 0.6;
-    text-align: left;
-    padding: 0 0.5rem 0.5rem;
-    border-bottom: 1px solid djui.get(foreground, primary, 0.15);
-  }
-
-  &__row td {
-    padding: 0.625rem 0.5rem;
-    border-bottom: 1px solid djui.get(foreground, primary, 0.08);
-    vertical-align: middle;
-  }
-
-  &__row--leader &__rank {
-    color: djui.get(accent, primary);
+  &--large {
+    font-size: 1.25rem;
+    --djui-component-table--row-min-height: 3.25rem;
   }
 
   &__rank {
-    width: 2.5rem;
     @include djui.djui-typography(numeric, $include-font-size: false);
     opacity: 0.6;
-  }
 
-  &__team {
-    max-width: 0;
-    width: 100%;
-    overflow: hidden;
+    &--leader {
+      color: djui.get(accent, primary);
+      opacity: 1;
+    }
   }
 
   &__number {
     @include djui.djui-typography(numeric, $include-font-size: false);
-    text-align: right;
-    width: 3rem;
     white-space: nowrap;
 
-    &--points {
+    &--emphasis {
       font-weight: 700;
       font-size: 1.125em;
     }
   }
 
-  &--compact {
-    font-size: 1.25rem;
-
-    td {
-      padding: 0.75rem 0.5rem;
-    }
+  &__empty {
+    @include djui.djui-typography(body);
+    margin: 0;
+    padding-left: 1rem;
+    opacity: 0.6;
   }
 }

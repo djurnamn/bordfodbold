@@ -1,38 +1,119 @@
 @use "styles/mixins" as djui;
 
+// The design system's segmented surface: the frame is the separator ink, the
+// cells paint the next surface level, and the gaps between them are the
+// separators - the same construction as the kit's Table.
 .TournamentGrid {
-  border-collapse: separate;
-  border-spacing: 0;
-  width: 100%;
-  table-layout: fixed;
+  @include djui.djui-surface-segmented(table);
   @include djui.djui-typography(body);
+  --grid-head-width: 12.5rem;
+  --grid-cell-width: 3.75rem;
+  --grid-row-height: 3rem;
+
+  &--large {
+    font-size: 1.25rem;
+    --grid-head-width: 12em;
+    --grid-cell-width: 3.5em;
+    --grid-row-height: 2.3em;
+  }
 
   &__scroll {
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin-inline: -0.25rem;
-    padding-inline: 0.25rem;
+    border-radius: inherit;
   }
 
-  th,
-  td {
-    border-bottom: 1px solid djui.get(foreground, primary, 0.08);
-    border-right: 1px solid djui.get(foreground, primary, 0.08);
-    height: 3rem;
+  &__layout {
+    @include djui.djui-surface-layout(table);
+    display: grid;
+    grid-template-columns: var(--grid-columns);
+    min-width: 100%;
+    width: fit-content;
+  }
+
+  &__row {
+    display: contents;
+  }
+
+  &__cell {
+    @include djui.djui-surface-cell;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--grid-row-height);
     padding: 0.25rem;
-    text-align: center;
-    vertical-align: middle;
+    @include djui.djui-typography(numeric, $include-font-size: false);
+
+    &--firstRow#{&}--firstColumn {
+      border-top-left-radius: inherit;
+    }
+    &--firstRow#{&}--lastColumn {
+      border-top-right-radius: inherit;
+    }
+    &--lastRow#{&}--firstColumn {
+      border-bottom-left-radius: inherit;
+    }
+    &--lastRow#{&}--lastColumn {
+      border-bottom-right-radius: inherit;
+    }
+
+    &--corner,
+    &--rowHead {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      justify-content: flex-start;
+      padding-inline: 0.75rem;
+    }
+
+    // A team against itself: the cell recedes one surface level, the way a
+    // disabled segment sits below its neighbours.
+    &--self {
+      --djui-background-resolved: rgb(var(--djui-previous-surface-1-rgb, var(--djui-surface-0-rgb)));
+    }
+
+    // The hovered cell's row and column: one step up, the hover wash the kit
+    // uses; the hovered cell itself two. Tinted cells mix their tint over it.
+    --tint-base: rgb(var(--djui-current-surface-rgb));
+
+    &--highlighted {
+      --tint-base: rgb(var(--djui-next-surface-1-rgb));
+      --djui-background-resolved: var(--tint-base);
+    }
+
+    &--focus {
+      --tint-base: rgb(var(--djui-next-surface-2-rgb));
+      --djui-background-resolved: var(--tint-base);
+    }
+
+    // The two headings of the cross read as its ends: two steps up, like the
+    // hovered cell, and their text thickens through the kit's cue slot.
+    &--rowHead#{&}--highlighted,
+    &--columnHead#{&}--highlighted {
+      --djui-background-resolved: rgb(var(--djui-next-surface-2-rgb));
+      --djui-cue-weight-resolved: 700;
+    }
+
+    // A team against itself stays recessed, cross or not.
+    &--self#{&}--highlighted {
+      --djui-background-resolved: rgb(var(--djui-previous-surface-1-rgb, var(--djui-surface-0-rgb)));
+    }
+
+    // The won and lost tints assign the surface's fill slot, mixed over the
+    // cell's own base so they hold at any depth and under the cross.
+    &--won {
+      --djui-background-resolved: color-mix(in srgb, rgb(var(--djui-context-positive-rgb)) 14%, var(--tint-base));
+    }
+
+    &--lost {
+      --djui-background-resolved: color-mix(in srgb, rgb(var(--djui-context-negative-rgb)) 10%, var(--tint-base));
+    }
   }
 
-  th#{&}__corner,
-  th#{&}__rowHead {
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    background: rgb(var(--djui-current-surface-rgb));
-    text-align: left;
-    width: 11rem;
-    min-width: 8rem;
+  &__empty {
+    @include djui.djui-typography(body);
+    margin: 0;
+    padding-left: 1rem;
+    opacity: 0.6;
   }
 
   &__cornerLabel {
@@ -43,28 +124,8 @@
     white-space: nowrap;
   }
 
-  &__columnHead {
-    width: 3.5rem;
-  }
-
-  &__cell {
-    @include djui.djui-typography(numeric, $include-font-size: false);
-    min-width: 3.5rem;
-    transition: background-color 0.3s;
-
-    &--self {
-      @include djui.djui-hatch(next-surface-2);
-    }
-
-    &--won {
-      background: rgb(var(--djui-accent-secondary-rgb) / 0.12);
-    }
-
-    &--lost {
-      background: rgb(var(--djui-context-negative-rgb) / 0.08);
-    }
-  }
-
+  // The cross highlight is the hover affordance; the button itself adds only
+  // the cursor and a keyboard ring.
   &__button {
     all: unset;
     display: grid;
@@ -73,12 +134,7 @@
     height: 100%;
     min-height: 2.5rem;
     cursor: pointer;
-    border-radius: 0.375rem;
-    @include djui.djui-focus-ring;
-
-    &:hover {
-      background: djui.get(foreground, primary, 0.08);
-    }
+    @include djui.djui-focus-ring($offset: -0.125rem);
   }
 
   &__score {
@@ -97,28 +153,14 @@
     opacity: 0.4;
   }
 
-  // Rows follow the type size, so a screen that scales its type scales its
-  // rows with it and eight teams still fit the panel.
-  &--compact {
-    font-size: 1.25rem;
-
-    th,
-    td {
-      height: 2.6em;
-    }
-  }
-
-  // On a phone the row header keeps the emblem and drops the name; the
-  // legend below the plan carries the names.
+  // On a phone the row header keeps the emblem and drops the name; the legend
+  // below the plan carries the names.
   @media (#{djui.width-to(small)}) {
-    &__corner,
-    &__rowHead {
-      width: 3.5rem;
-      min-width: 3.5rem;
-    }
+    --grid-head-width: 3.5rem;
 
-    &__rowHead .TeamMark__name {
-      @include djui.djui-visually-hidden;
+    &__cell--corner,
+    &__cell--rowHead {
+      padding-inline: 0.5rem;
     }
 
     &__cornerLabel {

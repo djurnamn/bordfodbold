@@ -1,30 +1,51 @@
 @use "styles/mixins" as djui;
 
 .ActivityFeed {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.5rem;
+  @include djui.djui-typography(body);
 
-  &__entry {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: baseline;
-    @include djui.djui-typography(body);
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid djui.get(foreground, primary, 0.08);
+  &--compact {
+    --djui-component-table--row-min-height: 1.75em;
+  }
+
+  &__result {
+    display: grid;
+    justify-items: center;
+    gap: 0.125em;
+  }
+
+  &__score {
+    @include djui.djui-typography(numeric, $include-font-size: false);
+    white-space: nowrap;
+  }
+
+  &__result--cleared &__score {
+    opacity: 0.6;
+    font-style: italic;
+  }
+
+  &__previous {
+    @include djui.djui-typography(caption);
+    opacity: 0.6;
+    white-space: nowrap;
   }
 
   &__when {
+    display: grid;
+    justify-items: end;
+    gap: 0.125em;
     @include djui.djui-typography(small);
     opacity: 0.6;
     white-space: nowrap;
   }
 
+  &__undoLabel {
+    @include djui.djui-typography(label, $include-font-size: false);
+  }
+
   &__empty {
     @include djui.djui-typography(body);
+    margin: 0;
+    padding-left: 1rem;
     opacity: 0.6;
   }
 }

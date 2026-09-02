@@ -1,7 +1,7 @@
 import type { TeamColor } from "@bordfodbold/domain";
 import type { CSSProperties } from "react";
 
-/** Each team colour is one of the design system's eight accent ordinals. */
+/** Each team color is one of the design system's eight accent ordinals. */
 const accentOrdinal: Record<TeamColor, string> = {
   violet: "primary",
   green: "secondary",
@@ -13,7 +13,7 @@ const accentOrdinal: Record<TeamColor, string> = {
   coral: "octonary",
 };
 
-/** Inline variables a component reads its team colour from. */
+/** Inline variables a component reads its team color from. */
 export function teamColorStyle(color: TeamColor): CSSProperties {
   const ordinal = accentOrdinal[color];
   return {

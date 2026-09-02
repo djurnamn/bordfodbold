@@ -3,7 +3,7 @@
 import { createBem } from "use-bem";
 
 import { ActivityFeed } from "@/components/ActivityFeed";
-import { BoardHeader } from "@/components/BoardHeader";
+import { ViewHeader } from "@/components/ViewHeader";
 import { Leaderboard } from "@/components/Leaderboard";
 import { TeamLegend } from "@/components/TeamLegend";
 import { TournamentGrid } from "@/components/TournamentGrid";
@@ -17,13 +17,7 @@ export function Board() {
   const standings = useStandings();
   return (
     <div className={bem()}>
-      <BoardHeader kicker="Signifly · table foosball" title={tournament.name} updatedAt={tournament.updatedAt} />
-      <nav className={bem("jump")} aria-label="Sections">
-        <a href="#standings">Standings</a>
-        <a href="#plan">Plan</a>
-        <a href="#teams">Teams</a>
-        <a href="#activity">Activity</a>
-      </nav>
+      <ViewHeader className={bem("header")} kicker="Signifly · table foosball" title={tournament.name} updatedAt={tournament.updatedAt} />
       <section id="standings" className={bem("panel", { standings: true })} aria-labelledby="standings-heading">
         <h2 id="standings-heading" className={bem("heading")}>
           Leaderboard

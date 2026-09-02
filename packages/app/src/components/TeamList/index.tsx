@@ -35,10 +35,15 @@ export function TeamList({ tournament, pending, onSave, onRemove }: TeamListProp
 
   return (
     <div className={bem()}>
+      {tournament.teams.length === 0 && <p className={bem("empty")}>No teams yet. Add the first one below.</p>}
+      {tournament.teams.length > 0 && (
+      <div className={bem("frame")} data-djui-next-surface="">
       <ul className={bem("teams")}>
         {tournament.teams.map((team) => (
-          <li key={team.id} className={bem("team")}>
-            <TeamMark team={team} size="large" />
+          <li key={team.id} className={bem("team")} data-djui-next-surface="">
+            <span className={bem("mark")}>
+              <TeamMark team={team} size="large" />
+            </span>
             <span className={bem("members")}>{team.members.join(" · ") || "No members yet"}</span>
             <span className={bem("teamActions")}>
               <Button label="Edit" variant="soft" size={0.85} onClick={() => setEditing({ team, creating: false })} />
@@ -47,6 +52,8 @@ export function TeamList({ tournament, pending, onSave, onRemove }: TeamListProp
           </li>
         ))}
       </ul>
+      </div>
+      )}
       <div className={bem("footer")}>
         <span className={bem("count")}>
           {tournament.teams.length} of {maximumTeams} teams
