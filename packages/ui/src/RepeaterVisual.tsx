@@ -16,6 +16,7 @@ declare module 'react' {
 interface RepeaterVisualProps extends ComponentPropsWithRef<'div'> {
   columns?: RepeaterColumn[];
   variant?: 'padded' | 'segmented';
+  separators?: 'both' | 'rows' | 'columns' | 'none';
   hideHeader?: boolean;
   sortable?: boolean;
   name?: string;
@@ -25,7 +26,7 @@ interface RepeaterVisualProps extends ComponentPropsWithRef<'div'> {
 }
 
 export function RepeaterVisual(props: RepeaterVisualProps) {
-  const { columns, variant, hideHeader, sortable, name, serializedValue, children, addButton, className, style, ref, ...rest } = props;
+  const { columns, variant, separators, hideHeader, sortable, name, serializedValue, children, addButton, className, style, ref, ...rest } = props;
 
   const bem = useBem('DjuiRepeater');
 
@@ -34,7 +35,7 @@ export function RepeaterVisual(props: RepeaterVisualProps) {
       {...rest}
       data-djui-next-surface=""
       style={style}
-      className={bem(undefined, { segmented: variant === 'segmented' }) + (className ? ' ' + className : '')}
+      className={bem(undefined, { segmented: variant === 'segmented', 'separators-rows': separators === 'rows', 'separators-columns': separators === 'columns', 'separators-none': separators === 'none' }) + (className ? ' ' + className : '')}
       ref={ref}
     >
       <div

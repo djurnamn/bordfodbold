@@ -41,6 +41,8 @@ export interface NumberInputDriverProps {
   formatOptions?: Intl.NumberFormatOptions;
   /** Label overrides (the machine's English defaults otherwise); `valueText` takes a `{value}` template. */
   translations?: NumberInputTranslations;
+  /** The input's id - a field wrapper's, handed to the machine so its own lookups keep working. */
+  inputId?: string;
   /** Called with the next parsed value on every machine-driven change (`null` = emptied). */
   onChange?: (value: number | null) => void;
   /** Called with the settled value when the entry commits (blur or Enter). */
@@ -66,6 +68,7 @@ export function NumberInputDriver({
   locale,
   formatOptions,
   translations,
+  inputId,
   onChange,
   onChangeEnd,
   children,
@@ -83,6 +86,7 @@ export function NumberInputDriver({
     name,
     locale: locale ?? localeContext.locale,
     formatOptions,
+    ids: inputId === undefined ? undefined : { input: inputId },
     translations: resolveNumberInputTranslations(translations),
     onValueChange: (details) => emit(onChange, details),
     onValueCommit: (details) => emit(onChangeEnd, details),

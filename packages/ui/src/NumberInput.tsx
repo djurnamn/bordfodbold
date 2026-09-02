@@ -1,4 +1,4 @@
-import { mergeElementProps } from './scripts';
+import { elementIdOf, mergeElementProps } from './scripts';
 import { NumberInputDriver } from './NumberInputDriver';
 import { NumberInputVisual } from './NumberInputVisual';
 import type { NumberInputTranslations } from './scripts';
@@ -43,6 +43,7 @@ export function NumberInput(props: NumberInputProps) {
       locale={locale}
       formatOptions={formatOptions}
       translations={translations}
+      inputId={elementIdOf(inputProps)}
       onChange={onChange}
       onChangeEnd={onChangeEnd}
     >

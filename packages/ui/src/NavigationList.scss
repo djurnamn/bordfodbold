@@ -1,0 +1,17 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/typography" as *;
+
+@layer djui.components {
+  .DjuiNavigationList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    &__label {
+      @include djui-typography(label);
+      padding: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+  }
+}

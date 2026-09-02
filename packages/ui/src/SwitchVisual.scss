@@ -40,7 +40,7 @@
       cursor: inherit;
     }
 
-    &:not(&--bare):has(> &__input:focus-visible) {
+    &:not(&--bare):has(&__input:focus-visible) {
       --djui-component-group-form--ring-width-claim: 0.125rem;
     }
 
@@ -53,6 +53,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.375rem;
+      font-size: var(--djui-component-switch--label-size, 1rem);
       --djui-component-icon--size: 1rem;
 
       &:empty {
@@ -76,6 +77,7 @@
 
     &__inline-label {
       @include djui-control-label;
+      line-height: var(--djui-component-switch--size, var(--djui-component-group-form--size, 1.5rem));
     }
 
     &:has(.DjuiSwitch__description) &__inline-label {

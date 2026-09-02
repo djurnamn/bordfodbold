@@ -126,7 +126,7 @@ export { tabsElementIds, tabsPanelProps } from './tabs';
 export type { FieldElementIds } from './field';
 export { fieldDescribedBy, fieldElementIds } from './field';
 
-export { mergeElementProps } from './element-props';
+export { elementIdOf, mergeElementProps } from './element-props';
 
 export { mergeTriggerProps, selectValueId } from './select';
 

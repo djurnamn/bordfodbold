@@ -26,3 +26,15 @@ export function mergeElementProps(
 ): Record<string, unknown> {
   return consumerProps ? { ...machineProps, ...consumerProps } : machineProps;
 }
+
+/**
+ * The `id` a consumer's element record names, when it names one - the field
+ * wrapper's id, to be handed to a machine through its `ids` rather than
+ * written over the element the machine looks up by its own id.
+ */
+export function elementIdOf(
+  consumerProps: Record<string, unknown> | undefined
+): string | undefined {
+  const id = consumerProps?.id;
+  return typeof id === 'string' && id !== '' ? id : undefined;
+}

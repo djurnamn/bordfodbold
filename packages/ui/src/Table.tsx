@@ -62,6 +62,10 @@ export interface TableProps {
   headerCellProps?: Record<string, unknown>;
   /** Attributes spread onto every body cell (e.g. `{ ...setSurface(3) }`). */
   bodyCellProps?: Record<string, unknown>;
+  /** Alternate the body rows' fill; usually paired with `separators: 'none'`. */
+  striped?: boolean;
+  /** Which separator gaps the surface shows (default `'both'`). */
+  separators?: 'both' | 'rows' | 'columns' | 'none';
   /** Extra class merged onto the grid root. */
   className?: string;
 }
@@ -84,6 +88,8 @@ export function Table({
   hover,
   headerCellProps,
   bodyCellProps,
+  striped,
+  separators,
   className,
 }: TableProps) {
   // Uncontrolled state seeds from the `default*` props only — the controlled
@@ -138,6 +144,8 @@ export function Table({
       hover={hover}
       headerCellProps={headerCellProps}
       bodyCellProps={bodyCellProps}
+      striped={striped}
+      separators={separators}
       onSortColumn={nonInteractive ? undefined : handleSort}
     />
   );

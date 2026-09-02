@@ -1,0 +1,48 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+
+@layer djui.components {
+  .DjuiDrawer {
+    position: relative;
+    width: var(--djui-component-drawer--panel-width-resolved, var(--djui-component-drawer--width, 15rem));
+    height: var(--djui-component-drawer--panel-height-resolved, 100%);
+    max-width: 100%;
+    max-height: 100%;
+    background: rgb(var(--djui-current-surface-rgb));
+    box-shadow: var(--djui-shadow-overlay);
+    overflow: hidden;
+
+    &--side-top, &--side-bottom {
+      --djui-component-drawer--panel-width-resolved: 100%;
+      --djui-component-drawer--panel-height-resolved: var(--djui-component-drawer--height, 15rem);
+    }
+
+    &__close-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      margin: 0.5rem;
+      z-index: 1;
+
+      & button {
+        @include djui-native-control-type;
+        @include djui-native-control-box;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border-radius: var(--djui-component-drawer--close-radius, 0.5rem);
+        cursor: pointer;
+        @include djui-focus-ring;
+      }
+    }
+
+    &__inner {
+      overflow: auto;
+      height: 100%;
+      padding: var(--djui-component-drawer--padding, 1rem);
+    }
+  }
+}

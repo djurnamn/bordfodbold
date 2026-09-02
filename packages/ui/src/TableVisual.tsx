@@ -17,6 +17,8 @@ export interface TableColumn {
   sortable?: boolean;
   padded?: boolean;
   render?: (row: TableRow) => ReactNode;
+  /** Where the column sits: "start" (default) or "end", for numbers. */
+  align?: "start" | "center" | "end";
 }
 export type SortIcon = (direction: SortDirection) => ReactNode;
 import { componentDefaultRecord } from './scripts';
@@ -43,10 +45,12 @@ interface TableVisualProps extends ComponentPropsWithRef<'div'> {
   hover?: 'row' | 'cell' | 'none';
   headerCellProps?: Record<string, unknown>;
   bodyCellProps?: Record<string, unknown>;
+  striped?: boolean;
+  separators?: 'both' | 'rows' | 'columns' | 'none';
 }
 
 export function TableVisual(props: TableVisualProps) {
-  const { columns, rows, hideHeader, sortedColumn, sortDirection, sortIcon, nonInteractive, onSortColumn, rowHref, linkColumn, onRowClick, hover, headerCellProps, bodyCellProps, className, style, ref, ...rest } = props;
+  const { columns, rows, hideHeader, sortedColumn, sortDirection, sortIcon, nonInteractive, onSortColumn, rowHref, linkColumn, onRowClick, hover, headerCellProps, bodyCellProps, striped, separators, className, style, ref, ...rest } = props;
 
   const bem = useBem('DjuiTable');
 
@@ -55,7 +59,7 @@ export function TableVisual(props: TableVisualProps) {
       {...rest}
       data-djui-next-surface=""
       style={style}
-      className={bem(undefined, { interactive: !nonInteractive, 'hover-row': (hover ?? ((rowHref || onRowClick) ? 'row' : 'none')) === 'row', 'hover-cell': (hover ?? ((rowHref || onRowClick) ? 'row' : 'none')) === 'cell' }) + (className ? ' ' + className : '')}
+      className={bem(undefined, { interactive: !nonInteractive, 'hover-row': (hover ?? ((rowHref || onRowClick) ? 'row' : 'none')) === 'row', 'hover-cell': (hover ?? ((rowHref || onRowClick) ? 'row' : 'none')) === 'cell', striped: striped === true, headless: hideHeader === true, 'separators-rows': separators === 'rows', 'separators-columns': separators === 'columns', 'separators-none': separators === 'none' }) + (className ? ' ' + className : '')}
       ref={ref}
     >
       <div className="DjuiTable__scroll">
@@ -77,7 +81,7 @@ export function TableVisual(props: TableVisualProps) {
                   >
                     {nonInteractive ? (
                       <div
-                        className={'DjuiTable__label' + (!column.sortable ? ' DjuiTable__label--unsortable' : '')}
+                        className={'DjuiTable__label' + (!column.sortable ? ' DjuiTable__label--unsortable' : '') + (column.align === 'end' ? ' DjuiTable__label--align-end' : '') + (column.align === 'center' ? ' DjuiTable__label--align-center' : '')}
                       >
                         {column.label}
                         {column.sortable && sortedColumn === column.key && sortDirection && sortIcon && (
@@ -87,7 +91,7 @@ export function TableVisual(props: TableVisualProps) {
                     ) : (
                       <button
                         type="button"
-                        className={'DjuiTable__label' + (!column.sortable ? ' DjuiTable__label--unsortable' : '')}
+                        className={'DjuiTable__label' + (!column.sortable ? ' DjuiTable__label--unsortable' : '') + (column.align === 'end' ? ' DjuiTable__label--align-end' : '') + (column.align === 'center' ? ' DjuiTable__label--align-center' : '')}
                         disabled={!column.sortable}
                         onClick={() => column.sortable && onSortColumn?.(column.key)}
                       >
@@ -114,7 +118,7 @@ export function TableVisual(props: TableVisualProps) {
                   <div
                     key={column.key}
                     {...{ ...componentDefaultRecord('Table', 'bodyCellProps'), ...bodyCellProps }}
-                    className={'DjuiTable__cell' + (column.padded !== false ? ' DjuiTable__cell--padded' : '')}
+                    className={'DjuiTable__cell' + (column.padded !== false ? ' DjuiTable__cell--padded' : '') + (column.align === 'end' ? ' DjuiTable__cell--align-end' : '') + (column.align === 'center' ? ' DjuiTable__cell--align-center' : '')}
                     role="cell"
                     data-djui-next-surface=""
                   >

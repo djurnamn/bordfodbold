@@ -85,6 +85,8 @@ export interface RepeaterProps {
   ) => ReactNode;
   /** The frame look: `'padded'` (default, flat list) or `'segmented'` (tabular separators). */
   variant?: 'padded' | 'segmented';
+  /** Which gaps the frame shows (default `'both'`). */
+  separators?: 'both' | 'rows' | 'columns' | 'none';
   /** Hide the header row (collapses toward the box-list look). */
   hideHeader?: boolean;
   /** Enable drag-to-reorder (dnd-kit). */
@@ -122,6 +124,7 @@ export function Repeater({
   renderCell,
   renderRow,
   variant,
+  separators,
   hideHeader,
   sortable = false,
   translations,
@@ -274,6 +277,7 @@ export function Repeater({
       className={className}
       columns={columns}
       variant={variant}
+      separators={separators}
       hideHeader={hideHeader}
       sortable={sortable}
       name={name}

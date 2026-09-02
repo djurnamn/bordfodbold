@@ -11,6 +11,7 @@ declare module 'react' {
 
 interface SwitchVisualProps extends ComponentPropsWithRef<'label'> {
   color?: `accent-${string}` | `context-${string}` | `foreground-${string}` | `surface-${string}` | 'backdrop';
+  size?: number;
   checked?: boolean;
   error?: boolean;
   disabled?: boolean;
@@ -28,7 +29,7 @@ interface SwitchVisualProps extends ComponentPropsWithRef<'label'> {
 }
 
 export function SwitchVisual(props: SwitchVisualProps) {
-  const { color, checked, error, disabled, neutral, inlineLabel, labelPlacement, description, changesWithState, standalone, inputProps, controlProps, labelProps, startLabel, endLabel, className, style, ref, ...rest } = props;
+  const { color, size, checked, error, disabled, neutral, inlineLabel, labelPlacement, description, changesWithState, standalone, inputProps, controlProps, labelProps, startLabel, endLabel, className, style, ref, ...rest } = props;
 
   const RootTag = (standalone === false ? 'span' : 'label') as ElementType<ComponentPropsWithRef<'label'>>;
 
@@ -37,7 +38,7 @@ export function SwitchVisual(props: SwitchVisualProps) {
   return (
     <RootTag
       {...rest}
-      style={{ '--djui-current-color-rgb': color !== undefined ? 'var(--djui-' + color + '-rgb)' : undefined, '--djui-current-color-contrast-rgb': color !== undefined ? 'var(--djui-' + color + '-contrast-rgb, var(--djui-foreground-contrast-rgb))' : undefined, '--djui-current-color-light-rgb': color !== undefined ? 'var(--djui-' + color + '-light-rgb)' : undefined, '--djui-current-color-lighter-rgb': color !== undefined ? 'var(--djui-' + color + '-lighter-rgb)' : undefined, '--djui-current-color-lightest-rgb': color !== undefined ? 'var(--djui-' + color + '-lightest-rgb)' : undefined, '--djui-current-color-dark-rgb': color !== undefined ? 'var(--djui-' + color + '-dark-rgb)' : undefined, '--djui-current-color-darker-rgb': color !== undefined ? 'var(--djui-' + color + '-darker-rgb)' : undefined, '--djui-current-color-darkest-rgb': color !== undefined ? 'var(--djui-' + color + '-darkest-rgb)' : undefined, '--djui-current-color-hover-rgb': color !== undefined ? 'var(--djui-' + color + '-hover-rgb)' : undefined, '--djui-current-color-active-rgb': color !== undefined ? 'var(--djui-' + color + '-active-rgb)' : undefined, ...style }}
+      style={{ '--djui-current-color-rgb': color !== undefined ? 'var(--djui-' + color + '-rgb)' : undefined, '--djui-current-color-contrast-rgb': color !== undefined ? 'var(--djui-' + color + '-contrast-rgb, var(--djui-foreground-contrast-rgb))' : undefined, '--djui-current-color-light-rgb': color !== undefined ? 'var(--djui-' + color + '-light-rgb)' : undefined, '--djui-current-color-lighter-rgb': color !== undefined ? 'var(--djui-' + color + '-lighter-rgb)' : undefined, '--djui-current-color-lightest-rgb': color !== undefined ? 'var(--djui-' + color + '-lightest-rgb)' : undefined, '--djui-current-color-dark-rgb': color !== undefined ? 'var(--djui-' + color + '-dark-rgb)' : undefined, '--djui-current-color-darker-rgb': color !== undefined ? 'var(--djui-' + color + '-darker-rgb)' : undefined, '--djui-current-color-darkest-rgb': color !== undefined ? 'var(--djui-' + color + '-darkest-rgb)' : undefined, '--djui-current-color-hover-rgb': color !== undefined ? 'var(--djui-' + color + '-hover-rgb)' : undefined, '--djui-current-color-active-rgb': color !== undefined ? 'var(--djui-' + color + '-active-rgb)' : undefined, '--djui-component-switch--size': size !== undefined ? size + 'rem' : undefined, ...style }}
       className={bem(undefined, { colored: color !== undefined, error: error === true, disabled: disabled === true, checked: checked === true, 'changes-with-state': changesWithState === true, bare: standalone === false }) + (className ? ' ' + className : '')}
       ref={ref}
     >

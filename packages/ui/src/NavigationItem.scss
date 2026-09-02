@@ -1,0 +1,34 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/color" as color;
+
+@layer djui.components {
+  .DjuiNavigationItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    @include djui-selectable-base($component: "navigation-item");
+
+    &:not(#{&}--solid):not(#{&}--colored)#{&}--active {
+      @include djui-background-soft($component: "navigation-item");
+      @include djui-cue-selected;
+    }
+
+    &:not(#{&}--solid)#{&}--colored#{&}--active {
+      @include djui-background-soft-colored($component: "navigation-item");
+      @include djui-cue-selected;
+    }
+
+    &--solid:not(#{&}--colored)#{&}--active {
+      @include djui-background-solid;
+      @include djui-cue-selected;
+    }
+
+    &--solid#{&}--colored#{&}--active {
+      @include djui-background-solid-colored;
+      @include djui-cue-selected;
+    }
+  }
+}

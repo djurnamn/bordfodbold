@@ -8,6 +8,35 @@
     @include djui-surface-segmented(table);
     width: 100%;
 
+    &--separators-rows {
+      --djui-component-table--separator-column: 0;
+    }
+
+    &--separators-columns {
+      --djui-component-table--separator-row: 0;
+    }
+
+    &--separators-none {
+      --djui-component-table--separator-row: 0;
+      --djui-component-table--separator-column: 0;
+    }
+
+    &--striped &__head &__cell {
+      --djui-background-resolved: rgb(var(--djui-next-surface-1-rgb));
+    }
+
+    &--striped &__body &__row:nth-child(odd) &__cell {
+      --djui-background-resolved: rgb(var(--djui-next-surface-1-rgb));
+    }
+
+    &--striped#{&}--headless &__body &__row:nth-child(odd) &__cell {
+      --djui-background-resolved: initial;
+    }
+
+    &--striped#{&}--headless &__body &__row:nth-child(even) &__cell {
+      --djui-background-resolved: rgb(var(--djui-next-surface-1-rgb));
+    }
+
     &__scroll {
       overflow-x: auto;
       border-radius: inherit;
@@ -38,6 +67,32 @@
       display: contents;
     }
 
+    &__row > &__cell--padded:first-child {
+      padding-left: var(--djui-component-table--inset, 1rem);
+    }
+
+    &__row > &__cell--padded:last-child {
+      padding-right: var(--djui-component-table--inset, 1rem);
+    }
+
+    &__head &__row > &__cell:first-child &__label {
+      padding-left: var(--djui-component-table--inset, 1rem);
+    }
+
+    &__head &__row > &__cell:last-child &__label {
+      padding-right: var(--djui-component-table--inset, 1rem);
+    }
+
+    &__cell--align-end {
+      justify-content: flex-end;
+      text-align: right;
+    }
+
+    &__cell--align-center {
+      justify-content: center;
+      text-align: center;
+    }
+
     &__cell {
       @include djui-surface-cell;
       display: flex;
@@ -59,6 +114,16 @@
       @include djui-native-control-box;
       @include djui-typography(label);
       @include djui-focus-ring($offset: -0.125rem);
+
+      &--align-end {
+        justify-content: flex-end;
+        text-align: right;
+      }
+
+      &--align-center {
+        justify-content: center;
+        text-align: center;
+      }
 
       &:not(.DjuiTable__label--unsortable) {
         cursor: pointer;

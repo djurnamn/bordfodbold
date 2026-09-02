@@ -15,6 +15,7 @@ interface SwitchProps {
   value?: string | number;
   form?: string;
   color?: `accent-${string}` | `context-${string}` | `foreground-${string}` | `surface-${string}` | 'backdrop';
+  size?: number;
   neutral?: boolean;
   inlineLabel?: string;
   labelPlacement?: 'start' | 'end';
@@ -27,7 +28,7 @@ interface SwitchProps {
 }
 
 export function Switch(props: SwitchProps) {
-  const { inputProps, checked, defaultChecked, disabled, error, required, readOnly, name, value, form, color, neutral, inlineLabel, labelPlacement, description, changesWithState, standalone, onChange } = props;
+  const { inputProps, checked, defaultChecked, disabled, error, required, readOnly, name, value, form, color, size, neutral, inlineLabel, labelPlacement, description, changesWithState, standalone, onChange } = props;
 
   return (
     <SwitchDriver
@@ -49,6 +50,7 @@ export function Switch(props: SwitchProps) {
           disabled={disabled}
           error={error}
           color={color}
+          size={size}
           neutral={neutral}
           standalone={standalone}
           inlineLabel={inlineLabel}

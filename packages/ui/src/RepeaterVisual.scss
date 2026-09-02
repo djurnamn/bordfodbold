@@ -8,11 +8,25 @@
     @include djui-surface(repeater, $padding: false);
     width: 100%;
 
+    &--separators-rows {
+      --djui-component-repeater--gap-column: 0;
+    }
+
+    &--separators-columns {
+      --djui-component-repeater--gap-row: 0;
+    }
+
+    &--separators-none {
+      --djui-component-repeater--gap-row: 0;
+      --djui-component-repeater--gap-column: 0;
+    }
+
     &__container {
       @include djui-focus-ring-style($color: rgb(var(--djui-context-negative-rgb)), $family: "form");
       display: grid;
       grid-template-columns: var(--djui-component-repeater--columns);
-      gap: var(--djui-component-repeater--gap, 0.5rem);
+      row-gap: var(--djui-component-repeater--gap-row, var(--djui-component-repeater--gap, 0.5rem));
+      column-gap: var(--djui-component-repeater--gap-column, var(--djui-component-repeater--gap, 0.5rem));
       padding: var(--djui-component-repeater--inset, 0.5rem) var(--djui-component-repeater--inset, 0.5rem) 0;
       min-width: 100%;
       border-radius: inherit;
@@ -35,6 +49,7 @@
 
     &__add-cell {
       display: contents;
+      border-radius: inherit;
     }
 
     &__row--sortable {
@@ -45,7 +60,8 @@
 
       &[data-dnd-dragging] {
         grid-template-columns: var(--djui-component-repeater--columns);
-        gap: var(--djui-component-repeater--gap, 0.5rem);
+        row-gap: var(--djui-component-repeater--gap-row, var(--djui-component-repeater--gap, 0.5rem));
+        column-gap: var(--djui-component-repeater--gap-column, var(--djui-component-repeater--gap, 0.5rem));
         opacity: 0.5;
       }
     }
@@ -88,6 +104,11 @@
       min-height: 3rem;
       margin-left: calc(-1 * var(--djui-component-repeater--inset, 0.5rem));
       margin-right: calc(-1 * var(--djui-component-repeater--inset, 0.5rem));
+      border-bottom-left-radius: inherit;
+      border-bottom-right-radius: inherit;
+    }
+
+    &__add &__control {
       border-bottom-left-radius: inherit;
       border-bottom-right-radius: inherit;
     }

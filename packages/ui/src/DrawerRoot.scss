@@ -1,0 +1,49 @@
+@use "styles/layer-order";
+@use "styles/helpers" as *;
+@use "styles/color" as color;
+
+@layer djui.components {
+  .DjuiDrawerRoot {
+    display: contents;
+
+    &--side-right {
+      --djui-component-drawer-root--justify-resolved: flex-end;
+    }
+
+    &--side-top {
+      --djui-component-drawer-root--direction-resolved: column;
+    }
+
+    &--side-bottom {
+      --djui-component-drawer-root--direction-resolved: column;
+      --djui-component-drawer-root--justify-resolved: flex-end;
+    }
+
+    &--contained {
+      --djui-component-drawer-root--position-resolved: absolute;
+    }
+
+    &__backdrop {
+      position: var(--djui-component-drawer-root--position-resolved, fixed);
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: var(--djui-layer-modal);
+      background: color.get(surface, 1, 0.5);
+    }
+
+    &__positioner {
+      position: var(--djui-component-drawer-root--position-resolved, fixed);
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: var(--djui-component-drawer-root--direction-resolved, row);
+      justify-content: var(--djui-component-drawer-root--justify-resolved, flex-start);
+      align-items: stretch;
+      z-index: var(--djui-layer-modal);
+    }
+  }
+}
