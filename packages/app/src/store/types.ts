@@ -26,6 +26,8 @@ export interface TournamentStore {
   reset(): Promise<void>;
   /** Replaces the tournament with the demo data. */
   loadDemoData(): Promise<void>;
+  /** Releases the transport (a channel, a socket); the store is not used after. */
+  close?(): void;
 }
 
 export class StoreLockedError extends Error {

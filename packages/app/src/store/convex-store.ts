@@ -29,22 +29,29 @@ export class ConvexStore implements TournamentStore {
   async load(): Promise<Tournament> {
     const existing = await this.client.query(api.tournaments.get, { slug: this.slug });
     if (existing !== null) {
-      return existing as Tournament;
+      return fromDocument(existing);
     }
     await this.client.mutation(api.tournaments.seedIfMissing, { slug: this.slug });
     const seeded = await this.client.query(api.tournaments.get, { slug: this.slug });
     if (seeded === null) {
       throw new Error("The tournament could not be seeded.");
     }
-    return seeded as Tournament;
+    return fromDocument(seeded);
   }
 
   subscribe(listener: (tournament: Tournament) => void): () => void {
-    return this.client.onUpdate(api.tournaments.get, { slug: this.slug }, (tournament) => {
-      if (tournament !== null) {
-        listener(tournament as Tournament);
-      }
-    });
+    return this.client.onUpdate(
+      api.tournaments.get,
+      { slug: this.slug },
+      (tournament) => {
+        if (tournament !== null) {
+          listener(fromDocument(tournament));
+        }
+      },
+      (failure) => {
+        console.error("The tournament subscription failed", failure);
+      },
+    );
   }
 
   async unlock(pin: string): Promise<boolean> {
@@ -108,4 +115,19 @@ export class ConvexStore implements TournamentStore {
       throw error;
     }
   }
+}
+
+type TournamentDocument = NonNullable<Awaited<ReturnType<ConvexClient["query"]>>> extends infer Result ? Result : never;
+
+/** The document as the domain's type: score arrays become the readonly tuples. */
+function fromDocument(document: TournamentDocument): Tournament {
+  const record = document as Omit<Tournament, "activity"> & { activity: Array<Omit<Tournament["activity"][number], "previous" | "next"> & { previous: number[] | null; next: number[] | null }> };
+  return {
+    ...record,
+    activity: record.activity.map((change) => ({
+      ...change,
+      previous: change.previous === null ? null : [change.previous[0] ?? 0, change.previous[1] ?? 0],
+      next: change.next === null ? null : [change.next[0] ?? 0, change.next[1] ?? 0],
+    })),
+  };
 }

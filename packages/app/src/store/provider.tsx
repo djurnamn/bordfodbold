@@ -19,8 +19,13 @@ import {
   type ReactNode,
 } from "react";
 
+import { Notice } from "@bordfodbold/ui";
+import { createBem } from "use-bem";
+
+import { describeError } from "@/lib/format";
 import { createStore } from "./index";
 import type { TournamentStore } from "./types";
+import "./provider.scss";
 
 export interface TournamentCommands {
   unlock(pin: string): Promise<boolean>;
@@ -57,13 +62,20 @@ interface TournamentProviderProps {
 }
 
 export function TournamentProvider({ store: givenStore, fallback = null, children }: TournamentProviderProps) {
+  const bem = createBem("TournamentProvider");
   const storeRef = useRef<TournamentStore | null>(givenStore ?? null);
   const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [loadFailure, setLoadFailure] = useState<string | null>(null);
   const [unlocked, setUnlocked] = useState(false);
-  const [pending, setPending] = useState(false);
+  // Commands in flight; two overlapping ones must not clear each other.
+  const [inFlight, setInFlight] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // The provider owns the store it creates and closes it on unmount; a
+    // given store is the caller's. Development mounts twice, so a closed
+    // store is never reused: the next run creates a fresh one.
+    const owned = givenStore === undefined;
     const store = storeRef.current ?? createStore();
     storeRef.current = store;
     let active = true;
@@ -72,37 +84,52 @@ export function TournamentProvider({ store: givenStore, fallback = null, childre
         setTournament(next);
       }
     });
-    store.load().then(async (loaded) => {
-      if (!active) {
-        return;
-      }
-      setTournament(loaded);
-      // An admin who reloads stays unlocked for the tab's lifetime.
-      const remembered = readRememberedPin();
-      if (remembered !== null && (await store.unlock(remembered)) && active) {
-        setUnlocked(true);
-      }
-    });
+    store
+      .load()
+      .then(async (loaded) => {
+        if (!active) {
+          return;
+        }
+        // An admin who reloads stays unlocked for the tab's lifetime; the
+        // remembered PIN is checked before anything renders, so the gate
+        // never flashes on a reload.
+        const remembered = readRememberedPin();
+        if (remembered !== null && (await store.unlock(remembered)) && active) {
+          setUnlocked(true);
+        }
+        if (active) {
+          setTournament(loaded);
+        }
+      })
+      .catch((failure: unknown) => {
+        if (active) {
+          setLoadFailure(describeError(failure));
+        }
+      });
     return () => {
       active = false;
       unsubscribe();
+      if (owned) {
+        store.close?.();
+        storeRef.current = null;
+      }
     };
-  }, []);
+  }, [givenStore]);
 
   const run = useCallback(async (command: (store: TournamentStore) => Promise<void>) => {
     const store = storeRef.current;
     if (store === null) {
       return;
     }
-    setPending(true);
+    setInFlight((count) => count + 1);
     try {
       await command(store);
       setError(null);
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : String(failure));
+      setError(describeError(failure));
       throw failure;
     } finally {
-      setPending(false);
+      setInFlight((count) => count - 1);
     }
   }, []);
 
@@ -134,12 +161,22 @@ export function TournamentProvider({ store: givenStore, fallback = null, childre
 
   const standings = useMemo(() => (tournament === null ? [] : computeStandings(tournament)), [tournament]);
 
+  if (loadFailure !== null) {
+    return (
+      <div className={bem("failure")} role="alert">
+        <Notice context="error" title="The tournament could not be loaded">
+          {loadFailure}
+        </Notice>
+      </div>
+    );
+  }
+
   if (tournament === null) {
     return <>{fallback}</>;
   }
 
   return (
-    <TournamentContext.Provider value={{ tournament, standings, unlocked, pending, error, commands }}>
+    <TournamentContext.Provider value={{ tournament, standings, unlocked, pending: inFlight > 0, error, commands }}>
       {children}
     </TournamentContext.Provider>
   );
