@@ -16,6 +16,7 @@ interface DrawerProps {
   modal?: boolean;
   closeOnEscape?: boolean;
   closeOnInteractOutside?: boolean;
+  initialFocus?: () => HTMLElement | null;
   role?: 'dialog' | 'alertdialog';
   translations?: DrawerTranslations;
   surface?: number;
@@ -25,7 +26,7 @@ interface DrawerProps {
 }
 
 export function Drawer(props: DrawerProps) {
-  const { open, defaultOpen, onOpenChange, side, contained, label, modal, closeOnEscape, closeOnInteractOutside, role, translations, surface } = props;
+  const { open, defaultOpen, onOpenChange, side, contained, label, modal, closeOnEscape, closeOnInteractOutside, initialFocus, role, translations, surface } = props;
 
   return (
     <DialogDriver
@@ -37,6 +38,7 @@ export function Drawer(props: DrawerProps) {
       preventScroll={contained ? false : undefined}
       closeOnEscape={closeOnEscape}
       closeOnInteractOutside={closeOnInteractOutside}
+      initialFocus={initialFocus}
       role={role}
     >
       {({ api }) => (

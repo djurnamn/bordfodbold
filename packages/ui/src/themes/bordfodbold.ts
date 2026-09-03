@@ -16,22 +16,22 @@ import { defaultTheme } from "./default";
  * cell never reads as a team.
  */
 
-const INK_DARK = "#14100f";
-const INK_LIGHT = "#ffffff";
-const VARIATIONS = { light: 3, dark: 3 };
+const inkDark = "#14100f";
+const inkLight = "#ffffff";
+const variations = { light: 3, dark: 3 };
 
-const accent = (value: string, contrast: string): DjuiColorDefinition => ({ value, variations: VARIATIONS, contrast });
-const context = (value: string): DjuiColorDefinition => ({ value, variations: VARIATIONS });
+const accent = (value: string, contrast: string): DjuiColorDefinition => ({ value, variations: variations, contrast });
+const context = (value: string): DjuiColorDefinition => ({ value, variations: variations });
 
 const accents = {
-  primary: accent("#7b61ff", INK_LIGHT), // violet
-  secondary: accent("#34b36e", INK_DARK), // green
-  tertiary: accent("#e04c9f", INK_LIGHT), // magenta
-  quaternary: accent("#f0be3c", INK_DARK), // yellow
-  quinary: accent("#3a86ff", INK_LIGHT), // blue
-  senary: accent("#f2703a", INK_DARK), // orange
-  septenary: accent("#22b0b0", INK_DARK), // aqua
-  octonary: accent("#f06060", INK_DARK), // coral
+  primary: accent("#7b61ff", inkLight), // violet
+  secondary: accent("#34b36e", inkDark), // green
+  tertiary: accent("#e04c9f", inkLight), // magenta
+  quaternary: accent("#f0be3c", inkDark), // yellow
+  quinary: accent("#3a86ff", inkLight), // blue
+  senary: accent("#f2703a", inkDark), // orange
+  septenary: accent("#22b0b0", inkDark), // aqua
+  octonary: accent("#f06060", inkDark), // coral
 };
 
 const contexts = {

@@ -15,6 +15,7 @@ interface ModalProps {
   modal?: boolean;
   closeOnEscape?: boolean;
   closeOnInteractOutside?: boolean;
+  initialFocus?: () => HTMLElement | null;
   translations?: ModalTranslations;
   fillHeight?: boolean;
   placement?: 'top' | 'center';
@@ -28,7 +29,7 @@ interface ModalProps {
 }
 
 export function Modal(props: ModalProps) {
-  const { open, defaultOpen, onOpenChange, onClose, label, modal, closeOnEscape, closeOnInteractOutside, translations, fillHeight, placement, width, role, surface } = props;
+  const { open, defaultOpen, onOpenChange, onClose, label, modal, closeOnEscape, closeOnInteractOutside, initialFocus, translations, fillHeight, placement, width, role, surface } = props;
 
   return (
     <DialogDriver
@@ -39,6 +40,7 @@ export function Modal(props: ModalProps) {
       modal={modal}
       closeOnEscape={closeOnEscape}
       closeOnInteractOutside={closeOnInteractOutside}
+      initialFocus={initialFocus}
       role={role}
     >
       {({ api }) => (

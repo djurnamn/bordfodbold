@@ -43,6 +43,8 @@ export interface DialogDriverProps {
   closeOnInteractOutside?: boolean;
   /** The dialog's role (default `dialog`); `alertdialog` also moves initial focus to the content. */
   role?: 'dialog' | 'alertdialog';
+  /** The element to focus on open - the field the dialog is about - instead of the first focusable. */
+  initialFocus?: () => HTMLElement | null;
   /**
    * Scoped slot: receives the live dialog api; render the trigger and, when
    * `api.open`, the panel. Called with a `{ api }` scope object to match the
@@ -61,6 +63,7 @@ export function DialogDriver({
   closeOnEscape = true,
   closeOnInteractOutside = true,
   role,
+  initialFocus,
   children,
 }: DialogDriverProps) {
   const localeContext = useLocale();
@@ -76,6 +79,7 @@ export function DialogDriver({
     closeOnEscape,
     closeOnInteractOutside,
     role,
+    initialFocusEl: initialFocus,
   });
   const api = dialog.connect(service, normalizeProps);
 

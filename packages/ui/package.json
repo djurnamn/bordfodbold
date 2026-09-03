@@ -18,7 +18,6 @@
   "dependencies": {
     "@dnd-kit/helpers": "^0.5.0",
     "@dnd-kit/react": "^0.5.0",
-    "@zag-js/avatar": "^1.41.2",
     "@zag-js/dialog": "^1.41.2",
     "@zag-js/i18n-utils": "^1.41.2",
     "@zag-js/number-input": "^1.41.2",
@@ -26,7 +25,6 @@
     "@zag-js/react": "^1.41.2",
     "@zag-js/switch": "^1.41.2",
     "@zag-js/tabs": "^1.41.2",
-    "@zag-js/tooltip": "^1.41.2",
     "use-bem": "^2.0.0"
   },
   "peerDependencies": {

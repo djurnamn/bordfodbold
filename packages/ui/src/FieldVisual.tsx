@@ -47,7 +47,7 @@ export function FieldVisual(props: FieldVisualProps) {
         {props.children}
       </div>
       {errorMessage !== undefined && (
-        <div className="DjuiField__message" id={errorMessageId}>
+        <div className="DjuiField__message" id={errorMessageId} role="alert">
           <span className="DjuiField__message-prefix">
             {resolveFieldTranslations(translations).errorPrefix + ' '}
           </span>
