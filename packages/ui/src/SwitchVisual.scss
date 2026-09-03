@@ -40,6 +40,15 @@
       cursor: inherit;
     }
 
+    &:has(&__input:not(:disabled):hover) {
+      --djui-component-switch--thumb-alpha: 0.75;
+    }
+
+    &:has(&__input:not(:disabled):active) {
+      --djui-component-switch--thumb-alpha: 1;
+      --djui-component-switch--thumb-stretch: 1.2;
+    }
+
     &:not(&--bare):has(&__input:focus-visible) {
       --djui-component-group-form--ring-width-claim: 0.125rem;
     }

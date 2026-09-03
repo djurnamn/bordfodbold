@@ -1,20 +1,14 @@
 'use client';
 
-import { useRef, useState, type ReactNode } from 'react';
-import { DragDropProvider, type DragEndEvent } from '@dnd-kit/react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { DragDropProvider, PointerSensor, type DragEndEvent } from '@dnd-kit/react';
+import { Accessibility, PointerActivationConstraints, defaultPreset } from '@dnd-kit/dom';
 import { useSortable } from '@dnd-kit/react/sortable';
 import { move } from '@dnd-kit/helpers';
-import { moveRepeaterRow } from './scripts';
-
-// The announcement's placeholders, filled locally — the shared `fillTemplate`
-// is not re-exported from `djui/scripts`, and one three-key substitution does
-// not justify widening that surface.
-const fillRowMovedTemplate = (
-  template: string,
-  values: { from: number; to: number; count: number }
-) => template.replace(/\{(from|to|count)\}/g, (_, key: 'from' | 'to' | 'count') => String(values[key]));
 import {
   addRepeaterRow,
+  fillRepeaterPositions,
+  moveRepeaterRowTo,
   removeRepeaterRow,
   resolveRepeaterTranslations,
   serializeRepeaterRows,
@@ -33,14 +27,34 @@ import { Icon } from './Icon';
 // giving the tabular `columns`/`renderCell` seam a public type.
 export type { RepeaterRow, RepeaterColumn };
 
+// The drag engine runs with its pointer sensor only, and without its
+// accessibility plugin. The handle is a real button now, and the driver owns
+// what it says: the plugin would write `aria-pressed` onto it unconditionally
+// (as `String(isDragging)`, over the selected state the driver sets), and the
+// keyboard sensor would start a keyboard drag on the same Space and Enter that
+// select the row. The handle carries its own name, description and live region.
+const dragPlugins = defaultPreset.plugins.filter((plugin) => plugin !== Accessibility);
+// The engine's defaults start a mouse drag on the handle the moment it is
+// pressed, which would swallow the click the handle now listens for. A drag
+// is a small travel (or, on touch, a held press so a tap and a scroll stay
+// what they are); anything less remains a click.
+const dragSensors = [
+  PointerSensor.configure({
+    activationConstraints: (event) =>
+      event.pointerType === 'touch'
+        ? [new PointerActivationConstraints.Delay({ value: 250, tolerance: 5 })]
+        : [new PointerActivationConstraints.Distance({ value: 4 })],
+  }),
+];
+
 /**
  * `Repeater` (React) — the repeating-rows control's **behaviour**: the irreducible
  * runtime the generated `RepeaterVisual` / `RepeaterRowVisual` can't express,
  * composing them for all appearance (the Visual/driver split).
  * It owns the row list (uncontrolled by default, or controlled via
- * `value`/`onChange`), add/remove, optional drag-sort (dnd-kit), and the
- * JSON-serialized `value` mirrored into the Visual's hidden `<input name>` for
- * native form posting.
+ * `value`/`onChange`), add/remove, optional reorder (drag through dnd-kit, and
+ * the handle's two non-drag paths), and the JSON-serialized `value` mirrored
+ * into the Visual's hidden `<input name>` for native form posting.
  *
  * It is a **control**, not a field: no label/error of its own — wrap it in
  * `<Field>` for those (the input/field split, as `TextInput`). Row *content* is
@@ -48,6 +62,14 @@ export type { RepeaterRow, RepeaterColumn };
  * Field's render-children), and `columns` + `renderCell` is the tabular sugar
  * that also drives the header + grid tracks. This is the seam `@djui/use-form-definition`
  * uses to feed its nested-field renderer through.
+ *
+ * **Reordering is one control with three uses.** The handle drags; the up and
+ * down arrow keys move its row a step; and a click that is not a drag selects
+ * the row, so a click on another row's handle places it there (a second click
+ * on the same handle, or Escape, lets it go). The click path is the
+ * single-pointer alternative WCAG 2.2 SC 2.5.7 requires — a keyboard
+ * equivalent alone does not satisfy it — folded into the handle rather than
+ * two more buttons beside it.
  */
 export interface RepeaterProps {
   /** Controlled row list. */
@@ -83,18 +105,14 @@ export interface RepeaterProps {
     index: number,
     setField: (key: string, value: unknown) => void,
   ) => ReactNode;
-  /** The frame look: `'padded'` (default, flat list) or `'segmented'` (tabular separators). */
-  variant?: 'padded' | 'segmented';
-  /** Which gaps the frame shows (default `'both'`). */
-  separators?: 'both' | 'rows' | 'columns' | 'none';
   /** Hide the header row (collapses toward the box-list look). */
   hideHeader?: boolean;
-  /** Enable drag-to-reorder (dnd-kit). */
+  /** Enable reordering: drag, the arrow keys, or click-and-place on the handle. */
   sortable?: boolean;
   /**
-   * Every string the repeater renders itself — the add control's label and the
-   * per-row remove control's — in one record (English defaults: "Add" /
-   * "Remove row").
+   * Every string the repeater renders itself — the add control's label, the
+   * per-row remove and reorder controls', the reorder announcements — in one
+   * record (English defaults).
    */
   translations?: RepeaterTranslations;
   /** Replace the per-row remove control (fills the row Visual's `removeButton` slot). */
@@ -123,8 +141,6 @@ export function Repeater({
   columns,
   renderCell,
   renderRow,
-  variant,
-  separators,
   hideHeader,
   sortable = false,
   translations,
@@ -137,7 +153,11 @@ export function Repeater({
   className,
 }: RepeaterProps) {
   const labels = resolveRepeaterTranslations(translations);
+  const hintId = useId();
+  const root = useRef<HTMLDivElement>(null);
   const [announcement, setAnnouncement] = useState('');
+  // The row a handle click picked up, waiting for a destination.
+  const [selected, setSelected] = useState<number | null>(null);
   const isControlled = controlledValue !== undefined;
   const [internalRows, setInternalRows] = useState<RepeaterRow[]>(
     controlledValue ?? defaultValue,
@@ -153,16 +173,40 @@ export function Repeater({
   }
   const ids = idsRef.current;
 
-  const commit = (nextRows: RepeaterRow[], nextIds: string[]) => {
+  // Every change goes through here. A selection rarely survives one — the row
+  // it named may have moved or gone — so the caller says which row, if any,
+  // is selected afterwards.
+  const commit = (
+    nextRows: RepeaterRow[],
+    nextIds: string[],
+    nextSelected: number | null = null,
+  ) => {
     idsRef.current = nextIds;
     if (!isControlled) setInternalRows(nextRows);
+    setSelected(nextSelected);
     onChange?.(nextRows);
   };
 
   const atMax = maxRows !== undefined && rows.length >= maxRows;
+  const showAdd = !hideAddRow && !atMax;
+
+  // A selected row is released by a press anywhere that is not one of this
+  // repeater's handles — a handle press is the placement (or the release) the
+  // click handler owns. Captured on the document so it runs before anything
+  // the press lands on.
+  useEffect(() => {
+    if (selected === null) return;
+    const release = (event: PointerEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target && root.current?.contains(target) && target.closest('.DjuiRepeater__grip')) return;
+      setSelected(null);
+    };
+    document.addEventListener('pointerdown', release, true);
+    return () => document.removeEventListener('pointerdown', release, true);
+  }, [selected]);
 
   const handleAdd = () => {
-    if (hideAddRow || atMax) return;
+    if (!showAdd) return;
     commit(addRepeaterRow(rows), [...ids, nextRowId()]);
   };
 
@@ -172,23 +216,56 @@ export function Repeater({
   };
 
   const handleFieldChange = (index: number, key: string, fieldValue: unknown) => {
-    commit(setRepeaterField(rows, index, key, fieldValue), ids);
+    commit(setRepeaterField(rows, index, key, fieldValue), ids, selected);
   };
 
-  // Reorder by button — the non-drag path SC 2.5.7 requires. It cannot reuse
-  // the drag library's `move`, which reconciles against a drag event, so both
-  // paths converge on `commit` instead.
-  const handleMove = (index: number, step: -1 | 1) => {
-    const nextRows = moveRepeaterRow(rows, index, step);
+  // The non-drag reorder — the arrow keys and the click-and-place path. It
+  // cannot reuse the drag library's `move`, which reconciles against a drag
+  // event, so both paths converge on `commit` instead.
+  const reorder = (from: number, to: number, nextSelected: number | null = null) => {
+    const nextRows = moveRepeaterRowTo(rows, from, to);
     if (nextRows === rows) return;
-    commit(nextRows, moveRepeaterRow(ids, index, step));
+    commit(nextRows, moveRepeaterRowTo(ids, from, to), nextSelected);
     setAnnouncement(
-      fillRowMovedTemplate(labels.rowMoved, {
-        from: index + 1,
-        to: index + step + 1,
-        count: rows.length,
-      })
+      fillRepeaterPositions(labels.rowMoved, { from: from + 1, to: to + 1, count: rows.length }),
     );
+  };
+
+  // A handle clicked without dragging: the first click selects its row, a
+  // click on another row's handle places the selected row there, a second
+  // click on the same handle lets it go.
+  const handleSelect = (index: number) => {
+    if (selected === null) {
+      setSelected(index);
+      setAnnouncement(
+        fillRepeaterPositions(labels.rowSelected, { from: index + 1, count: rows.length }),
+      );
+      return;
+    }
+    if (selected === index) {
+      setSelected(null);
+      return;
+    }
+    reorder(selected, index);
+  };
+
+  const handleHandleKeyDown = (index: number, event: KeyboardEvent<HTMLButtonElement>) => {
+    const step = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
+    if (step !== 0) {
+      event.preventDefault();
+      // A selected row stays selected as it moves; any other row moving would
+      // leave the index naming the wrong row, so that lets the selection go.
+      reorder(index, index + step, selected === index ? index + step : null);
+      // The keyed row is moved in the DOM, and a moved node loses focus. Put
+      // it back on the same handle once the frame has painted the new order.
+      const handle = event.currentTarget;
+      requestAnimationFrame(() => handle.focus());
+      return;
+    }
+    if (event.key === 'Escape' && selected !== null) {
+      event.preventDefault();
+      setSelected(null);
+    }
   };
 
   // Reorder on drop: pair each stable id with its row so `move` (the dnd-kit helper
@@ -217,7 +294,11 @@ export function Repeater({
         // `role="cell"`: the container is a `table`, and a table's rows own cells
         // — a control sitting directly in a row is a child the role does not
         // allow. The controls and remove cells beside these already carried it.
-        <div key={column.key} role="cell" className="DjuiRepeater__cell">
+        <div
+          key={column.key}
+          role="cell"
+          className="DjuiRepeater__cell DjuiRepeater__cell--content"
+        >
           {renderCell
             ? renderCell(column, row, index, setField, {
                 'aria-label': column.label ?? column.key,
@@ -227,7 +308,7 @@ export function Repeater({
       ));
     }
     return (
-      <div role="cell" className="DjuiRepeater__cell">
+      <div role="cell" className="DjuiRepeater__cell DjuiRepeater__cell--content">
         {renderRow
           ? renderRow(row, index, setField)
           : Object.values(row)
@@ -257,10 +338,11 @@ export function Repeater({
         key={ids[index]}
         id={ids[index]}
         index={index}
-        isLast={index === rows.length - 1}
-        labels={labels}
-        onMoveUp={() => handleMove(index, -1)}
-        onMoveDown={() => handleMove(index, 1)}
+        selected={selected === index}
+        label={labels.reorderRow}
+        hintId={hintId}
+        onSelect={() => handleSelect(index)}
+        onKeyDown={(event) => handleHandleKeyDown(index, event)}
         removeButton={removeButton(index)}
       >
         {rowContent(row, index)}
@@ -274,16 +356,16 @@ export function Repeater({
 
   const shell = (
     <RepeaterVisual
+      ref={root}
       className={className}
       columns={columns}
-      variant={variant}
-      separators={separators}
       hideHeader={hideHeader}
       sortable={sortable}
+      hideAddRow={!showAdd}
       name={name}
       serializedValue={name ? serializeRepeaterRows(rows) : undefined}
       addButton={
-        !hideAddRow && !atMax ? (
+        showAdd ? (
           renderAddButton ? (
             renderAddButton(handleAdd)
           ) : (
@@ -307,8 +389,18 @@ export function Repeater({
   // so the wrapper is uniform across the React/Vue/Svelte drivers (provider-wrap
   // alignment; Vue/Svelte always-wrap, so React matches rather than they branch).
   return (
-    <DragDropProvider onDragEnd={handleDragEnd}>
+    <DragDropProvider plugins={dragPlugins} sensors={dragSensors} onDragEnd={handleDragEnd}>
       {shell}
+      {/*
+        The handle's description — the two non-drag ways to reorder — read once
+        on focus through `aria-describedby`, so a keyboard user learns the keys
+        from the control itself.
+      */}
+      {sortable && (
+        <span id={hintId} className="DjuiRepeater__announcement">
+          {labels.reorderHint}
+        </span>
+      )}
       {/*
         The reorder live region. Mounted empty and filled afterwards, because a
         region injected together with its text announces nothing (ARIA19) — and
@@ -327,28 +419,31 @@ export function Repeater({
 
 /**
  * One sortable row — a `RepeaterRowVisual` given the sortable's element `ref` (the
- * engine translates/animates it directly) and a `handleRef`-bearing drag grip in
- * the Visual's `handle` slot. `index` keeps the sortable's position current as the
- * list reorders. The drag-active styling (the lifted row's dim + its self-contained
- * grid) lives in the Visual's SCSS, keyed on dnd-kit's `data-dnd-dragging` hook, so
- * it stays uniform across every target rather than an inline per-framework style.
+ * engine translates/animates it directly) and a `handleRef`-bearing reorder handle
+ * in the Visual's `handle` slot. `index` keeps the sortable's position current as
+ * the list reorders. The drag-active styling (the lifted row's dim + its
+ * self-contained grid) lives in the Visual's SCSS, keyed on dnd-kit's
+ * `data-dnd-dragging` hook, so it stays uniform across every target rather than
+ * an inline per-framework style.
  */
 function SortableRow({
   id,
   index,
-  isLast,
-  labels,
-  onMoveUp,
-  onMoveDown,
+  selected,
+  label,
+  hintId,
+  onSelect,
+  onKeyDown,
   removeButton,
   children,
 }: {
-  isLast: boolean;
-  labels: Required<RepeaterTranslations>;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
   id: string;
   index: number;
+  selected: boolean;
+  label: string;
+  hintId: string;
+  onSelect: () => void;
+  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
   removeButton: ReactNode;
   children: ReactNode;
 }) {
@@ -357,51 +452,26 @@ function SortableRow({
     <RepeaterRowVisual
       ref={ref}
       sortable
+      selected={selected}
       removeButton={removeButton}
       handle={
-        <>
-          {/*
-            The grip is a POINTER affordance only. It is `aria-hidden` because
-            the two buttons beside it do the same job for every other input, and
-            announcing a third control that only a mouse can use is noise. That
-            also neutralises the drag library's `aria-pressed` / `aria-grabbed`,
-            which it writes unconditionally as `String(isDragging)` — so at rest
-            every grip otherwise announced as an unpressed toggle button, with a
-            second attribute (`aria-grabbed`) that ARIA 1.2 removed.
-
-            `tabIndex={-1}` finishes that decision. Hidden *and* focusable is a
-            contradiction — a keyboard user would land on a control screen readers
-            have been told is not there. dnd-kit only writes `tabindex="0"` when
-            the activator has no `tabindex` of its own, so stating one here is a
-            supported opt-out rather than a fight with the library.
-          */}
-          <span
-            className="DjuiRepeater__control DjuiRepeater__grip"
-            ref={handleRef}
-            aria-hidden="true"
-            tabIndex={-1}
-          >
-            <Icon name="grip-vertical" />
-          </span>
-          <button
-            type="button"
-            className="DjuiRepeater__control"
-            aria-label={labels.moveRowUp}
-            disabled={index === 0}
-            onClick={() => onMoveUp()}
-          >
-            <Icon name="chevron-up" />
-          </button>
-          <button
-            type="button"
-            className="DjuiRepeater__control"
-            aria-label={labels.moveRowDown}
-            disabled={isLast}
-            onClick={() => onMoveDown()}
-          >
-            <Icon name="chevron-down" />
-          </button>
-        </>
+        // The handle is a real, named button — the one reorder control. It
+        // drags (dnd-kit's activator), takes the arrow keys, and toggles the
+        // row's selection on a click that never became a drag; `aria-pressed`
+        // is that selection. A plain click stays a click because the pointer
+        // sensor activates only after a small travel or a held press.
+        <button
+          type="button"
+          className="DjuiRepeater__control DjuiRepeater__grip"
+          ref={handleRef}
+          aria-label={label}
+          aria-describedby={hintId}
+          aria-pressed={selected}
+          onClick={onSelect}
+          onKeyDown={onKeyDown}
+        >
+          <Icon name="grip-vertical" />
+        </button>
       }
     >
       {children}

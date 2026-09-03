@@ -15,10 +15,9 @@ declare module 'react' {
 
 interface RepeaterVisualProps extends ComponentPropsWithRef<'div'> {
   columns?: RepeaterColumn[];
-  variant?: 'padded' | 'segmented';
-  separators?: 'both' | 'rows' | 'columns' | 'none';
   hideHeader?: boolean;
   sortable?: boolean;
+  hideAddRow?: boolean;
   name?: string;
   serializedValue?: string;
   children?: ReactNode;
@@ -26,7 +25,7 @@ interface RepeaterVisualProps extends ComponentPropsWithRef<'div'> {
 }
 
 export function RepeaterVisual(props: RepeaterVisualProps) {
-  const { columns, variant, separators, hideHeader, sortable, name, serializedValue, children, addButton, className, style, ref, ...rest } = props;
+  const { columns, hideHeader, sortable, hideAddRow, name, serializedValue, children, addButton, className, style, ref, ...rest } = props;
 
   const bem = useBem('DjuiRepeater');
 
@@ -35,32 +34,32 @@ export function RepeaterVisual(props: RepeaterVisualProps) {
       {...rest}
       data-djui-next-surface=""
       style={style}
-      className={bem(undefined, { segmented: variant === 'segmented', 'separators-rows': separators === 'rows', 'separators-columns': separators === 'columns', 'separators-none': separators === 'none' }) + (className ? ' ' + className : '')}
+      className={bem() + (className ? ' ' + className : '')}
       ref={ref}
     >
       <div
         className="DjuiRepeater__container"
         role="table"
-        style={{ '--djui-component-repeater--columns': (sortable ? 'auto ' : '') + (columns && columns.length ? columns.map((column) => column.width || 'minmax(0, 1fr)').join(' ') : 'minmax(0, 1fr)') + ' auto' }}
+        style={{ '--djui-component-repeater--columns': 'auto ' + (columns && columns.length ? columns.map((column) => column.width || 'minmax(0, 1fr)').join(' ') : 'minmax(0, 1fr)') + ' auto' }}
       >
         {!hideHeader && columns && columns.length && (
           <div className="DjuiRepeater__head">
             <div className="DjuiRepeater__row" role="row">
-              {sortable && (
-                <div
-                  className="DjuiRepeater__cell DjuiRepeater__cell--handle"
-                  role="columnheader"
-                />
-              )}
-              {columns.map((column) => (
-                <div
-                  key={column.key}
-                  className="DjuiRepeater__cell"
-                  role="columnheader"
-                >
-                  {column.label}
-                </div>
-              ))}
+              <div
+                className="DjuiRepeater__cell DjuiRepeater__cell--handle"
+                role="columnheader"
+              />
+              <div className="DjuiRepeater__cells" role="presentation">
+                {columns.map((column) => (
+                  <div
+                    key={column.key}
+                    className="DjuiRepeater__cell DjuiRepeater__cell--content"
+                    role="columnheader"
+                  >
+                    {column.label}
+                  </div>
+                ))}
+              </div>
               <div
                 className="DjuiRepeater__cell DjuiRepeater__cell--actions"
                 role="columnheader"
@@ -71,11 +70,13 @@ export function RepeaterVisual(props: RepeaterVisualProps) {
         <div className="DjuiRepeater__body">
           {props.children}
         </div>
-        <div className="DjuiRepeater__add" role="row">
-          <div className="DjuiRepeater__add-cell" role="cell">
-            {props.addButton}
+        {!hideAddRow && (
+          <div className="DjuiRepeater__add" role="row">
+            <div className="DjuiRepeater__add-cell" role="cell">
+              {props.addButton}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       {name && <input type="hidden" name={name} value={serializedValue} />}
     </div>

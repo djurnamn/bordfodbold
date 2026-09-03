@@ -25,15 +25,19 @@
       z-index: 1;
 
       & button {
-        @include djui-native-control-type;
-        @include djui-native-control-box;
+        @include djui-native-control-type($color: null);
+        @include djui-native-control-box($background: null);
+        @include djui-background-surface($interactive: true);
+        background-color: var(--djui-background-resolved);
+        color: var(--djui-foreground-resolved);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 2rem;
-        height: 2rem;
+        width: 2.5rem;
+        height: 2.5rem;
         padding: 0;
-        border-radius: var(--djui-component-drawer--close-radius, 0.5rem);
+        border-radius: 50%;
+        --djui-component-icon--size: 1.5rem;
         cursor: pointer;
         @include djui-focus-ring;
       }

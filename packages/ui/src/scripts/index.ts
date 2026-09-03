@@ -146,7 +146,9 @@ export {
 export type { RepeaterRow, RepeaterTranslations } from './repeater';
 export {
   addRepeaterRow,
+  fillRepeaterPositions,
   moveRepeaterRow,
+  moveRepeaterRowTo,
   removeRepeaterRow,
   setRepeaterField,
   serializeRepeaterRows,

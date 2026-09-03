@@ -40,6 +40,17 @@
       border-radius: 999px;
     }
 
+    &--plain:not(&--colored) {
+      --djui-foreground-resolved: rgba(var(--djui-foreground-primary-rgb), 0.7);
+      @include djui-hover {
+        --djui-foreground-resolved: rgba(var(--djui-foreground-primary-rgb), 0.85);
+      }
+
+      &:active {
+        --djui-foreground-resolved: rgb(var(--djui-foreground-primary-rgb));
+      }
+    }
+
     &--interactive {
       @include djui-disabled-slots($cursor: pointer);
       @include djui-focus-ring;

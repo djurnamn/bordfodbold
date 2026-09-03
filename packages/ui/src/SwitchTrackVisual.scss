@@ -15,26 +15,31 @@
     border-radius: 999px;
     --djui-background-resolved: initial;
     background-color: var(--djui-background-resolved, rgb(var(--djui-component-group-form--color-input-background-rgb)));
+    --djui-component-switch--well-edge-resolved: initial;
+    box-shadow: var(--djui-component-switch--well-edge-resolved, inset 0 0 0 var(--djui-separator, 0.0625rem) rgb(djui-separator-color(switch)));
+    --djui-component-switch--thumb-width-resolved: calc((var(--djui-component-switch--size, var(--djui-component-group-form--size, 1.5rem)) - 0.25rem) * var(--djui-component-switch--thumb-stretch, 1));
 
     &__thumb {
-      width: calc(var(--djui-component-switch--size, var(--djui-component-group-form--size, 1.5rem)) - 0.25rem);
+      width: var(--djui-component-switch--thumb-width-resolved);
       height: calc(var(--djui-component-switch--size, var(--djui-component-group-form--size, 1.5rem)) - 0.25rem);
-      border-radius: 50%;
+      border-radius: 999px;
       --djui-thumb-background-resolved: initial;
-      background-color: var(--djui-thumb-background-resolved, rgb(var(--djui-next-surface-3-rgb)));
+      background-color: var(--djui-thumb-background-resolved, rgba(var(--djui-foreground-primary-rgb), var(--djui-component-switch--thumb-alpha, 0.55)));
     }
 
     &--checked {
       --djui-background-resolved: rgb(var(--djui-current-color-rgb));
+      --djui-component-switch--well-edge-resolved: none;
     }
 
     &--checked &__thumb {
       --djui-thumb-background-resolved: rgb(var(--djui-current-color-contrast-rgb, var(--djui-current-surface-rgb)));
-      transform: translateX(calc(var(--djui-component-switch--track-width-resolved) - var(--djui-component-switch--size, var(--djui-component-group-form--size, 1.5rem))));
+      transform: translateX(calc(var(--djui-component-switch--track-width-resolved) - 0.25rem - var(--djui-component-switch--thumb-width-resolved)));
     }
 
     &--neutral, &--neutral#{&}--checked {
       --djui-background-resolved: rgb(var(--djui-previous-surface-2-rgb));
+      --djui-component-switch--well-edge-resolved: none;
     }
 
     &--neutral &__thumb, &--neutral#{&}--checked &__thumb {
