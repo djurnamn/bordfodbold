@@ -73,10 +73,9 @@ export function TeamDialog({ team, creating, pending, onSave, onClose }: TeamDia
               <TextInput {...controlProps} value={String(row.name ?? "")} placeholder="Name" maxLength={40} onChange={(event) => setField("name", event.currentTarget.value)} />
             )}
             hideHeader
-            variant="segmented"
-            separators="rows"
+            sortable
             maxRows={maximumMembers}
-            translations={{ add: "Add member", removeRow: "Remove member" }}
+            translations={{ add: "Add member", removeRow: "Remove member", reorderRow: "Reorder member" }}
           />
         </Field>
 
