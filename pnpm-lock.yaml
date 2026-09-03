@@ -78,9 +78,6 @@ importers:
       '@dnd-kit/react':
         specifier: ^0.5.0
         version: 0.5.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@zag-js/avatar':
-        specifier: ^1.41.2
-        version: 1.43.3
       '@zag-js/dialog':
         specifier: ^1.41.2
         version: 1.43.3
@@ -100,9 +97,6 @@ importers:
         specifier: ^1.41.2
         version: 1.43.3
       '@zag-js/tabs':
-        specifier: ^1.41.2
-        version: 1.43.3
-      '@zag-js/tooltip':
         specifier: ^1.41.2
         version: 1.43.3
       use-bem:
@@ -594,15 +588,6 @@ packages:
   '@eslint/plugin-kit@0.4.1':
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
-  '@floating-ui/core@1.8.0':
-    resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
-
-  '@floating-ui/dom@1.8.0':
-    resolution: {integrity: sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg==}
-
-  '@floating-ui/utils@0.2.12':
-    resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -1370,9 +1355,6 @@ packages:
   '@zag-js/aria-hidden@1.43.3':
     resolution: {integrity: sha512-f8mqntgsDQFwPDlClF30oXJolY26sg1lnYe6avQB79kwgUQKvw10aYeiUou2INYN7mACNs4nNERfAf1/p54jHw==}
 
-  '@zag-js/avatar@1.43.3':
-    resolution: {integrity: sha512-cAQFzmZRBoV8M2oGUMHYiBlF2hiwwSJOzmRLjz/yCElK2EHs63O9BzhRk05EZeFqJLvQXoz6bpZ/ug5YX48cRg==}
-
   '@zag-js/core@1.43.3':
     resolution: {integrity: sha512-afREBcZWvPLHz/2AxJeuAP2o6+o3V7NZO/MutLhdclKaVSBlPzCr6qqP9k8hq1zOxk1jogKT5VVGielzWDY2Dw==}
 
@@ -1403,9 +1385,6 @@ packages:
   '@zag-js/pin-input@1.43.3':
     resolution: {integrity: sha512-eUIyyJeA07yJzdGPh7vkQdnd/32OtU9xMppQDGIKHSJFA1ZIeqxdmy33Safj41XFurLBTStQAKLCSJmBGgY2Gg==}
 
-  '@zag-js/popper@1.43.3':
-    resolution: {integrity: sha512-99PPQerLylh+ouG16d0Go0UgpLR3rCQvWMmJoO5Ti8+2Ww3aqBNLTqpF0rJuLPe1Ps4BfEt5Lr4dYhL1ixgbRQ==}
-
   '@zag-js/react@1.43.3':
     resolution: {integrity: sha512-PVfq738OhicFsGOZNqrsBmdOHuh54XnIhkyJ9HSWDpzQcGHq4fuFWIvfmqW/5o/Xkj+JwFQLoIDVX/KHaUjcXA==}
     peerDependencies:
@@ -1423,9 +1402,6 @@ packages:
 
   '@zag-js/tabs@1.43.3':
     resolution: {integrity: sha512-uLT5YiQAcDkSi9T1plYQyXAXaqGi1H5iw/PA0yXsWDOoNFU9jlPM5s8SuXbBJzXiufSFekdhzpNhMUhcapnBdA==}
-
-  '@zag-js/tooltip@1.43.3':
-    resolution: {integrity: sha512-sBVhcejAQN5oDFE3PoGrvvjqOt5+9rHQjtjnnuhPZqeghsiX/IaL7AY8KelwDoNkMf2npN5i7loQvAZMZLVFaw==}
 
   '@zag-js/types@1.43.3':
     resolution: {integrity: sha512-QokzUgkJ7a/TRE8SAXqlm1XfiNDbyM8y+mx0PpmzHa8bvmWXLEe/Zx2TRz8aYoGim75NluYzDy3x+WWileF7uA==}
@@ -3229,17 +3205,6 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@floating-ui/core@1.8.0':
-    dependencies:
-      '@floating-ui/utils': 0.2.12
-
-  '@floating-ui/dom@1.8.0':
-    dependencies:
-      '@floating-ui/core': 1.8.0
-      '@floating-ui/utils': 0.2.12
-
-  '@floating-ui/utils@0.2.12': {}
-
   '@humanfs/core@0.19.2':
     dependencies:
       '@humanfs/types': 0.15.0
@@ -3826,14 +3791,6 @@ snapshots:
     dependencies:
       '@zag-js/dom-query': 1.43.3
 
-  '@zag-js/avatar@1.43.3':
-    dependencies:
-      '@zag-js/anatomy': 1.43.3
-      '@zag-js/core': 1.43.3
-      '@zag-js/dom-query': 1.43.3
-      '@zag-js/types': 1.43.3
-      '@zag-js/utils': 1.43.3
-
   '@zag-js/core@1.43.3':
     dependencies:
       '@zag-js/dom-query': 1.43.3
@@ -3895,12 +3852,6 @@ snapshots:
       '@zag-js/types': 1.43.3
       '@zag-js/utils': 1.43.3
 
-  '@zag-js/popper@1.43.3':
-    dependencies:
-      '@floating-ui/dom': 1.8.0
-      '@zag-js/dom-query': 1.43.3
-      '@zag-js/utils': 1.43.3
-
   '@zag-js/react@1.43.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@zag-js/core': 1.43.3
@@ -3932,16 +3883,6 @@ snapshots:
       '@zag-js/anatomy': 1.43.3
       '@zag-js/core': 1.43.3
       '@zag-js/dom-query': 1.43.3
-      '@zag-js/types': 1.43.3
-      '@zag-js/utils': 1.43.3
-
-  '@zag-js/tooltip@1.43.3':
-    dependencies:
-      '@zag-js/anatomy': 1.43.3
-      '@zag-js/core': 1.43.3
-      '@zag-js/dom-query': 1.43.3
-      '@zag-js/focus-visible': 1.43.3
-      '@zag-js/popper': 1.43.3
       '@zag-js/types': 1.43.3
       '@zag-js/utils': 1.43.3
 
