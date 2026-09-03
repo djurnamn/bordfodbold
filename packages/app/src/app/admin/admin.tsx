@@ -2,6 +2,7 @@
 
 import { undoableChange, type Match } from "@bordfodbold/domain";
 import { Button, Tab, TabList, TabPanel, Tabs } from "@bordfodbold/ui";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createBem } from "use-bem";
 
@@ -22,6 +23,13 @@ export function Admin() {
   const bem = createBem("Admin");
   const tournament = useTournament();
   const { commands, pending } = useTournamentCommands();
+  const router = useRouter();
+  // Locking sends the admin back to the board: the PIN gate is for arriving,
+  // not for the screen you just left.
+  const lock = () => {
+    commands.lock();
+    router.push("/");
+  };
   const [editing, setEditing] = useState<Match | null>(null);
   const undoable = undoableChange(tournament);
 
@@ -62,7 +70,7 @@ export function Admin() {
 
         <TabPanel value="settings">
           <section className={bem("panel", { surface: true })}>
-            <SettingsForm tournament={tournament} pending={pending} onRename={commands.renameTournament} onUpdateSettings={commands.updateSettings} onReset={commands.reset} onLoadDemoData={commands.loadDemoData} onLock={commands.lock} />
+            <SettingsForm tournament={tournament} pending={pending} onRename={commands.renameTournament} onUpdateSettings={commands.updateSettings} onReset={commands.reset} onLoadDemoData={commands.loadDemoData} onLock={lock} />
           </section>
         </TabPanel>
       </Tabs>

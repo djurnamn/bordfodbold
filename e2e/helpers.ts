@@ -27,5 +27,8 @@ export async function resetTournament(page: Page) {
   await page.getByRole("button", { name: "Load", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Signifly Autumn Open" })).toBeVisible();
   await page.getByRole("button", { name: "Lock" }).first().click();
+  // Locking leaves the admin for the board; the PIN gate is for arriving.
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Enter the PIN" })).toBeVisible();
 }
