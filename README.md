@@ -12,15 +12,17 @@ about that; the design decisions and the review of what came out are mine.
 
 ## What it does
 
-- **Board** (`/`) - the leaderboard and the tournament plan side by side, the
+- The board (`/`): the leaderboard and the tournament plan side by side, the
   teams with their members, and the latest results. Works on a phone.
-- **Screen** (`/screen`) - the same data with nothing to tap: one 16:9 screen,
-  type that scales with the display, a clock, and the next matches to play.
-  Fits eight teams on a 1080p display without scrolling.
-- **Admin** (`/admin`) - behind a PIN. Tap a cell to enter a result, replace
+- The screen (`/screen`): the same data with nothing to tap. One 16:9 screen,
+  type that scales with the display, a clock, and the next matches to play;
+  eight teams fit a 1080p display without scrolling. On a narrower window it
+  reads as a page.
+- The admin (`/admin`), behind a PIN. Tap a cell to enter a result, replace
   one (with a second confirmation), clear one, or undo the last change. Add,
   edit and remove teams; rename the tournament; set goals to win, points per
-  win, and whether each pairing plays once or twice.
+  win, and whether each pairing plays once or twice; clear the tournament, or
+  load the demo data.
 
 Every change is logged with what it replaced, and the log is on the board.
 
@@ -110,10 +112,8 @@ board and screen views have no way to write at all.
 One tournament per deployment; the data model carries a tournament id so a
 list is a routing change, not a data change. The local store has no server to
 check the PIN against, so it checks in the browser; the Convex store checks it
-on the deployment. Optimistic updates are not implemented; Convex round trips
-are fast enough that the lag is not visible in practice.
-
-## Next
-
-A tournament list and archive, a "now playing" state driven from the table,
-and the design pass this prototype has not had yet.
+on the deployment, where a four-digit PIN is friction rather than security
+(the PIN check is not rate limited). Optimistic updates are not implemented;
+Convex round trips are fast enough that the lag is not visible in practice.
+A tournament list and a "now playing" state driven from the table are the
+obvious next things; neither is here.

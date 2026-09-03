@@ -13,6 +13,37 @@ test.beforeEach(async ({ page }) => {
   await resetTournament(page);
 });
 
+// Whatever a test leaves behind, the shared tournament goes back to the demo.
+test.afterAll(async ({ browser }) => {
+  const page = await browser.newPage();
+  await resetTournament(page);
+  await page.close();
+});
+
+test("the admin grid is one tab stop and the arrow keys walk it", async ({ page }) => {
+  await page.goto("/admin");
+  await enterPin(page);
+  await expect(page.getByRole("heading", { name: "Signifly Autumn Open" })).toBeFocused();
+
+  const stops = page.locator(".TournamentGrid__button[tabindex='0']");
+  await expect(stops).toHaveCount(1);
+  await stops.focus();
+  const focusedLabel = () => page.evaluate(() => document.activeElement?.getAttribute("aria-label"));
+  const first = await focusedLabel();
+  await page.keyboard.press("ArrowRight");
+  const second = await focusedLabel();
+  expect(second).not.toBe(first);
+  await page.keyboard.press("ArrowLeft");
+  expect(await focusedLabel()).toBe(first);
+  await expect(page.locator(".TournamentGrid__cell--highlighted").first()).toBeVisible();
+
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "First to 10" })).toBeVisible();
+  await expect(page.getByLabel("Vesterbro Vikings goals")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(stops).toBeFocused();
+});
+
 test("a wrong PIN is refused, the right one opens the admin", async ({ page }) => {
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Enter the PIN" })).toBeVisible();
@@ -97,6 +128,4 @@ test("teams and settings", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("No teams yet. Add them in the admin.")).toBeVisible();
   await expect(page.getByText("No results entered yet.")).toBeVisible();
-
-  await resetTournament(page);
 });

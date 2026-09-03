@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
-export const pin = "1234";
+/** The admin PIN of the deployment under test. */
+export const pin = process.env.E2E_ADMIN_PIN ?? "1234";
 
 /** Types the PIN into the pin input: focus the first cell, then the digits. */
 export async function enterPin(page: Page, value: string = pin) {

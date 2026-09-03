@@ -15,9 +15,15 @@ async function addTeam(page: Page, name: string, emblem: string) {
 
 test.use({ viewport: { width: 1920, height: 1080 } });
 
-test("the info screen fits eight teams on one 1080p screen without scrolling", async ({ page }) => {
+// The tournament is shared with real screens: put the demo back whatever
+// happened, and once for the file rather than per test.
+test.afterAll(async ({ browser }) => {
+  const page = await browser.newPage();
   await resetTournament(page);
+  await page.close();
+});
 
+async function growToEightTeams(page: Page) {
   await page.goto("/admin");
   await enterPin(page);
   await page.getByRole("tab", { name: "Teams" }).click();
@@ -25,13 +31,10 @@ test("the info screen fits eight teams on one 1080p screen without scrolling", a
   await addTeam(page, "Night Shift", "🦊");
   await expect(page.getByText("8 of 8 teams")).toBeVisible();
   await expect(page.getByRole("button", { name: "Add team" })).toBeDisabled();
+}
 
-  await page.goto("/screen");
-  await expect(page.getByRole("heading", { name: "Signifly Autumn Open" })).toBeVisible();
-  await expect(page.getByRole("table").first().getByRole("row")).toHaveCount(9);
-
-  // Nothing on the screen may scroll or clip: not the page, not a panel, not a
-  // scroll container inside one. Every element is checked.
+/** Nothing on the screen may scroll or clip: not the page, not a panel, not a scroll container inside one. */
+async function expectNothingClipped(page: Page) {
   const overflow = await page.evaluate(() => {
     const root = document.scrollingElement!;
     const clipped = [...document.querySelectorAll<HTMLElement>(".Screen, .Screen *")]
@@ -44,11 +47,31 @@ test("the info screen fits eight teams on one 1080p screen without scrolling", a
   });
   expect(overflow.page, "the page scrolls").toBe(false);
   expect(overflow.clipped, "something clips its content").toEqual([]);
+}
+
+test("the info screen fits eight teams on a 1280x720 display too", async ({ page }) => {
+  await resetTournament(page);
+  await growToEightTeams(page);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("/screen");
+  await expect(page.getByRole("heading", { name: "Signifly Autumn Open" })).toBeVisible();
+  await expectNothingClipped(page);
+  if (shots) {
+    await page.screenshot({ path: `${shots}/screen-8-teams-720.png` });
+  }
+});
+
+test("the info screen fits eight teams on one 1080p screen without scrolling", async ({ page }) => {
+  await resetTournament(page);
+  await growToEightTeams(page);
+
+  await page.goto("/screen");
+  await expect(page.getByRole("heading", { name: "Signifly Autumn Open" })).toBeVisible();
+  await expect(page.getByRole("table").first().getByRole("row")).toHaveCount(9);
+
+  await expectNothingClipped(page);
 
   if (shots) {
     await page.screenshot({ path: `${shots}/screen-8-teams.png` });
   }
-
-  // The tournament may be shared with real screens: leave it as found.
-  await resetTournament(page);
 });
