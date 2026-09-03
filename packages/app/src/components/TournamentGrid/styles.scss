@@ -124,7 +124,7 @@
 
   // The cross highlight is the affordance; the button fills the cell (the
   // whole cell is the tap target) and adds only the cursor and a keyboard ring.
-  &--editable &__cell {
+  &--editable &__cell:has(> &__button) {
     padding: 0;
   }
 

@@ -11,7 +11,7 @@
   --team-mark-size: 1.75em;
 
   &--small {
-    --team-mark-size: 1.5em;
+    --team-mark-size: 1.375em;
     font-size: 0.875em;
   }
 
@@ -37,12 +37,16 @@
     display: inline-grid;
     place-items: center;
     flex: none;
-    width: var(--team-mark-size);
-    height: var(--team-mark-size);
+    // The glyph is a fixed share of the circle in every size: the size
+    // resolves against the mark's font, so the circle is derived from the
+    // glyph's own font size rather than measured in its (shrunken) em.
+    --team-mark-glyph-share: 0.55;
+    font-size: calc(var(--team-mark-size) * var(--team-mark-glyph-share));
+    width: calc(1em / var(--team-mark-glyph-share));
+    height: calc(1em / var(--team-mark-glyph-share));
     border-radius: 50%;
     background: rgb(var(--team-rgb));
     color: rgb(var(--team-contrast-rgb));
-    font-size: calc(var(--team-mark-size) * 0.55);
     line-height: 1;
     box-shadow: 0 0 0 0.125rem rgb(var(--team-rgb) / 0.35);
   }
