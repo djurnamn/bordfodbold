@@ -1,11 +1,14 @@
 "use client";
 
-import type { StandingRow, Tournament } from "@bordfodbold/domain";
+import { teamById, type StandingRow, type Tournament } from "@bordfodbold/domain";
 import { Table, type TableRow } from "@bordfodbold/ui";
 import { useLayoutEffect, useRef } from "react";
 import { createBem } from "use-bem";
 
+import { EmptyState } from "@/components/EmptyState";
 import { TeamMark } from "@/components/TeamMark";
+import { prefersReducedMotion } from "@/lib/motion";
+import { useContainerWidth } from "@/lib/use-container-width";
 import "./styles.scss";
 
 interface LeaderboardProps {
@@ -24,6 +27,9 @@ export function Leaderboard({ tournament, standings, size = "default" }: Leaderb
   const bem = createBem("Leaderboard");
   const root = useRef<HTMLDivElement>(null);
   const previousTops = useRef(new Map<string, number>());
+  // Below this width the fixed columns and the insets no longer fit beside
+  // the names: a phone, or a narrow panel on a small screen.
+  const narrow = useContainerWidth(root) < 460;
 
   useLayoutEffect(() => {
     const tops = new Map<string, number>();
@@ -34,7 +40,7 @@ export function Leaderboard({ tournament, standings, size = "default" }: Leaderb
       const top = cell.getBoundingClientRect().top;
       tops.set(teamId, top);
       const previous = previousTops.current.get(teamId);
-      if (previous !== undefined && previous !== top) {
+      if (previous !== undefined && previous !== top && !prefersReducedMotion()) {
         cell.animate([{ transform: `translateY(${previous - top}px)` }, { transform: "translateY(0)" }], {
           duration: 450,
           easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
@@ -45,11 +51,11 @@ export function Leaderboard({ tournament, standings, size = "default" }: Leaderb
   });
 
   if (standings.length === 0) {
-    return <p className={bem("empty")}>No teams yet. Add them in the admin.</p>;
+    return <EmptyState>No teams yet. Add them in the admin.</EmptyState>;
   }
 
   const rows: TableRow[] = standings.flatMap((row) => {
-    const team = tournament.teams.find((candidate) => candidate.id === row.teamId);
+    const team = teamById(tournament, row.teamId);
     if (team === undefined) {
       return [];
     }
@@ -66,7 +72,7 @@ export function Leaderboard({ tournament, standings, size = "default" }: Leaderb
             {row.rank}
           </span>
         ),
-        team: <TeamMark team={team} size={size === "large" ? "medium" : "large"} data-team-id={team.id} />,
+        team: <TeamMark team={team} size={size === "large" || narrow ? "medium" : "large"} data-team-id={team.id} />,
         won: numeric(String(row.won)),
         lost: numeric(String(row.lost)),
         difference: numeric(formatDifference(row.goalDifference)),
@@ -82,14 +88,25 @@ export function Leaderboard({ tournament, standings, size = "default" }: Leaderb
         hover="none"
         striped
         separators="rows"
-        columns={[
-          { key: "rank", label: "#", width: { fixed: 40 } },
-          { key: "team", label: "Team", width: { fill: true, min: 140 } },
-          { key: "won", label: "W", width: { fixed: 40 }, align: "end" },
-          { key: "lost", label: "L", width: { fixed: 40 }, align: "end" },
-          { key: "difference", label: "+/−", width: { fixed: 52 }, align: "end" },
-          { key: "points", label: "Pts", width: { fixed: 60 }, align: "end" },
-        ]}
+        columns={
+          // A narrow container has no room for the difference column.
+          narrow
+            ? [
+                { key: "rank", label: "#", width: { fixed: 32 } },
+                { key: "team", label: "Team", width: { fill: true, min: 96 } },
+                { key: "won", label: "W", width: { fixed: 32 }, align: "end" },
+                { key: "lost", label: "L", width: { fixed: 32 }, align: "end" },
+                { key: "points", label: "Pts", width: { fixed: 52 }, align: "end" },
+              ]
+            : [
+                { key: "rank", label: "#", width: { fixed: 40 } },
+                { key: "team", label: "Team", width: { fill: true, min: 140 } },
+                { key: "won", label: "W", width: { fixed: 40 }, align: "end" },
+                { key: "lost", label: "L", width: { fixed: 40 }, align: "end" },
+                { key: "difference", label: "+/−", width: { fixed: 52 }, align: "end" },
+                { key: "points", label: "Pts", width: { fixed: 60 }, align: "end" },
+              ]
+        }
         rows={rows}
       />
     </div>

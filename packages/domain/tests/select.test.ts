@@ -20,6 +20,11 @@ describe("selectCell", () => {
     expect(selectCell(t, "b", "a")).toMatchObject({ kind: "unplayed" });
   });
 
+  it("reports a pairing the schedule does not hold", () => {
+    const t = tournament(["a", "b"]);
+    expect(selectCell({ ...t, matches: [] }, "a", "b")).toEqual({ kind: "missing" });
+  });
+
   it("reports an unplayed pairing", () => {
     expect(selectCell(tournament(["a", "b"]), "a", "b")).toMatchObject({ kind: "unplayed" });
   });

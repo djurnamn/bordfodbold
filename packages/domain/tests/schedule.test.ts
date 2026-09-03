@@ -53,4 +53,10 @@ describe("matchesDiscardedBy", () => {
     expect(matchesDiscardedBy(t, { teamIds: ["a", "b"] }).map((match) => match.id)).toEqual(["a--c--1"]);
     expect(matchesDiscardedBy(t, {})).toEqual([]);
   });
+
+  it("lists the played second-leg matches when the legs drop to one", () => {
+    let t = tournament(["a", "b"], 2);
+    t = { ...t, matches: t.matches.map((match) => (match.leg === 2 ? { ...match, homeScore: 10, awayScore: 3, playedAt: "2026-09-02T10:00:00.000Z" } : match)) };
+    expect(matchesDiscardedBy(t, { legs: 1 }).map((match) => match.id)).toEqual(["b--a--2"]);
+  });
 });

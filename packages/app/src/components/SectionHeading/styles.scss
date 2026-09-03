@@ -1,0 +1,15 @@
+@use "styles/mixins" as djui;
+
+.SectionHeading {
+  @include djui.djui-typography(caption);
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.7;
+  margin: 0;
+  padding-left: 1rem;
+
+  &--flush {
+    padding-left: 0;
+  }
+}

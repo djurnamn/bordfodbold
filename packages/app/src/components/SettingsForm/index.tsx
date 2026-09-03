@@ -6,6 +6,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { createBem } from "use-bem";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { describeError } from "@/lib/format";
 import "./styles.scss";
 
 interface SettingsFormProps {
@@ -25,9 +26,7 @@ export function SettingsForm({ tournament, pending, onRename, onUpdateSettings, 
   const [goalsToWin, setGoalsToWin] = useState<number | null>(tournament.settings.goalsToWin);
   const [pointsPerWin, setPointsPerWin] = useState<number | null>(tournament.settings.pointsPerWin);
   const [legs, setLegs] = useState<Legs>(tournament.settings.legs);
-  const [confirmingLegs, setConfirmingLegs] = useState(false);
-  const [confirmingReset, setConfirmingReset] = useState(false);
-  const [confirmingDemo, setConfirmingDemo] = useState(false);
+  const [confirming, setConfirming] = useState<"legs" | "clear" | "demo" | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -52,14 +51,14 @@ export function SettingsForm({ tournament, pending, onRename, onUpdateSettings, 
       }
       setSaved(true);
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error));
+      setFailure(describeError(error));
     }
   };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (discardedByLegs.length > 0) {
-      setConfirmingLegs(true);
+      setConfirming("legs");
       return;
     }
     void apply();
@@ -98,37 +97,37 @@ export function SettingsForm({ tournament, pending, onRename, onUpdateSettings, 
 
       <div className={bem("danger")}>
         <div>
-          <h3 className={bem("dangerTitle")}>Start over</h3>
+          <h2 className={bem("dangerTitle")}>Start over</h2>
           <p className={bem("dangerText")}>Clears the tournament: every team, result and log entry goes. The name and the rules stay.</p>
         </div>
-        <Button label="Clear the tournament" variant="soft" color="context-negative" onClick={() => setConfirmingReset(true)} disabled={pending} />
+        <Button label="Clear the tournament" variant="soft" color="context-negative" onClick={() => setConfirming("clear")} disabled={pending} />
       </div>
 
       <div className={bem("danger")}>
         <div>
-          <h3 className={bem("dangerTitle")}>Demo data</h3>
+          <h2 className={bem("dangerTitle")}>Demo data</h2>
           <p className={bem("dangerText")}>Replaces the tournament with the demo: six teams and a handful of results.</p>
         </div>
-        <Button label="Load demo data" variant="soft" onClick={() => setConfirmingDemo(true)} disabled={pending} />
+        <Button label="Load demo data" variant="soft" onClick={() => setConfirming("demo")} disabled={pending} />
       </div>
 
       <div className={bem("danger")}>
         <div>
-          <h3 className={bem("dangerTitle")}>Lock the admin</h3>
+          <h2 className={bem("dangerTitle")}>Lock the admin</h2>
           <p className={bem("dangerText")}>Ask for the PIN again on this device.</p>
         </div>
         <Button label="Lock" variant="soft" onClick={onLock} />
       </div>
 
-      <ConfirmDialog open={confirmingLegs} title="Play each pairing once?" confirmLabel="Discard and save" destructive onCancel={() => setConfirmingLegs(false)} onConfirm={() => { setConfirmingLegs(false); void apply(); }}>
+      <ConfirmDialog open={confirming === "legs"} title="Play each pairing once?" confirmLabel="Discard and save" destructive onCancel={() => setConfirming(null)} onConfirm={() => { setConfirming(null); void apply(); }}>
         Going back to one leg discards {discardedByLegs.length} recorded second-leg {discardedByLegs.length === 1 ? "result" : "results"}.
       </ConfirmDialog>
 
-      <ConfirmDialog open={confirmingReset} title="Clear the tournament?" confirmLabel="Clear" destructive onCancel={() => setConfirmingReset(false)} onConfirm={async () => { setConfirmingReset(false); await onReset(); }}>
+      <ConfirmDialog open={confirming === "clear"} title="Clear the tournament?" confirmLabel="Clear" destructive onCancel={() => setConfirming(null)} onConfirm={async () => { setConfirming(null); await onReset(); }}>
         Every team, result and log entry is discarded. This cannot be undone.
       </ConfirmDialog>
 
-      <ConfirmDialog open={confirmingDemo} title="Load the demo data?" confirmLabel="Load" onCancel={() => setConfirmingDemo(false)} onConfirm={async () => { setConfirmingDemo(false); await onLoadDemoData(); }}>
+      <ConfirmDialog open={confirming === "demo"} title="Load the demo data?" confirmLabel="Load" onCancel={() => setConfirming(null)} onConfirm={async () => { setConfirming(null); await onLoadDemoData(); }}>
         The current teams, results and log are replaced by the demo tournament.
       </ConfirmDialog>
     </form>

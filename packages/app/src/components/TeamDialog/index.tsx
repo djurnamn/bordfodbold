@@ -6,7 +6,9 @@ import { useEffect, useState, type FormEvent } from "react";
 import { createBem } from "use-bem";
 
 import { emblems } from "@/lib/emblems";
+import { describeError } from "@/lib/format";
 import { teamColorLabels, teamColorStyle } from "@/lib/team-color";
+import { rovingRadioProps } from "@/lib/use-roving-radios";
 import "./styles.scss";
 
 interface TeamDialogProps {
@@ -19,6 +21,9 @@ interface TeamDialogProps {
 }
 
 const maximumMembers = 4;
+const nameInputId = "team-dialog-name";
+const colorOptions = teamColors.map((value) => ({ value }));
+const emblemOptions = emblems.map((value) => ({ value }));
 
 /** Name, members, color and emblem. Everything a team is recognized by. */
 export function TeamDialog({ team, creating, pending, onSave, onClose }: TeamDialogProps) {
@@ -44,18 +49,18 @@ export function TeamDialog({ team, creating, pending, onSave, onClose }: TeamDia
       await onSave({ ...draft, members: draft.members.filter((member) => member.trim() !== "") });
       onClose();
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error));
+      setFailure(describeError(error));
     }
   };
 
   return (
-    <Modal open onClose={onClose} label={creating ? "New team" : `Edit ${team?.name ?? "team"}`} width="small">
+    <Modal open onClose={onClose} label={creating ? "New team" : `Edit ${team?.name ?? "team"}`} width="small" initialFocus={() => document.getElementById(nameInputId)}>
       <form className={bem()} onSubmit={save}>
         <h2 className={bem("title")}>{creating ? "New team" : "Edit team"}</h2>
 
-        <Field label="Team name">
+        <Field label="Team name" id={nameInputId}>
           {({ id, className, describedBy }) => (
-            <TextInput id={id} className={className} aria-describedby={describedBy} value={draft.name} onChange={(event) => update({ name: event.currentTarget.value })} autoFocus={creating} required maxLength={40} />
+            <TextInput id={id} className={className} aria-describedby={describedBy} value={draft.name} onChange={(event) => update({ name: event.currentTarget.value })} required maxLength={40} />
           )}
         </Field>
 
@@ -88,6 +93,7 @@ export function TeamDialog({ team, creating, pending, onSave, onClose }: TeamDia
                 className={bem("swatch", { selected: draft.color === color })}
                 style={teamColorStyle(color)}
                 onClick={() => update({ color })}
+                {...rovingRadioProps(colorOptions, draft.color, (value) => update({ color: value }), color)}
               />
             ))}
           </div>
@@ -98,7 +104,16 @@ export function TeamDialog({ team, creating, pending, onSave, onClose }: TeamDia
           {({ labelledBy }) => (
           <div className={bem("emblems")} role="radiogroup" aria-labelledby={labelledBy}>
             {emblems.map((emblem) => (
-              <button key={emblem} type="button" role="radio" aria-checked={draft.emblem === emblem} aria-label={emblem} className={bem("emblem", { selected: draft.emblem === emblem })} onClick={() => update({ emblem })}>
+              <button
+                key={emblem}
+                type="button"
+                role="radio"
+                aria-checked={draft.emblem === emblem}
+                aria-label={emblem}
+                className={bem("emblem", { selected: draft.emblem === emblem })}
+                onClick={() => update({ emblem })}
+                {...rovingRadioProps(emblemOptions, draft.emblem, (value) => update({ emblem: value }), emblem)}
+              >
                 {emblem}
               </button>
             ))}

@@ -1,7 +1,9 @@
 import type { Team } from "@bordfodbold/domain";
 import { createBem } from "use-bem";
 
+import { EmptyState } from "@/components/EmptyState";
 import { TeamMark } from "@/components/TeamMark";
+import { formatMembers } from "@/lib/format";
 import "./styles.scss";
 
 interface TeamLegendProps {
@@ -15,7 +17,7 @@ interface TeamLegendProps {
 export function TeamLegend({ teams, columns = "responsive", density = "default" }: TeamLegendProps) {
   const bem = createBem("TeamLegend");
   if (teams.length === 0) {
-    return <p className={bem("empty")}>No teams yet.</p>;
+    return <EmptyState>No teams yet.</EmptyState>;
   }
   return (
     <div className={bem(undefined, { [`columns-${columns}`]: true, [density]: true })} data-djui-next-surface="">
@@ -23,7 +25,7 @@ export function TeamLegend({ teams, columns = "responsive", density = "default" 
         {teams.map((team) => (
           <li key={team.id} className={bem("team")} data-djui-next-surface="">
             <TeamMark team={team} />
-            <span className={bem("members")}>{team.members.join(" · ") || "No members yet"}</span>
+            <span className={bem("members")}>{formatMembers(team.members)}</span>
           </li>
         ))}
       </ul>

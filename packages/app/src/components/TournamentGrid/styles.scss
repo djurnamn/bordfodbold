@@ -11,15 +11,21 @@
   --grid-row-height: 3rem;
 
   &--large {
-    font-size: 1.25rem;
+    font-size: 1.25em;
     --grid-head-width: 12em;
     --grid-cell-width: 3.5em;
     --grid-row-height: 2.3em;
   }
 
   &__scroll {
+    position: relative;
     overflow-x: auto;
     border-radius: inherit;
+
+    // The fade at the edge says there is more to the right.
+    &--scrollable {
+      mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+    }
   }
 
   &__layout {
@@ -36,12 +42,15 @@
 
   &__cell {
     @include djui.djui-surface-cell;
+    @include djui.djui-typography(numeric, $include-font-size: false);
+    // The hovered or focused cell's row and column lift one step, the cell
+    // itself two; tinted cells mix their tint over that base.
+    --tint-base: rgb(var(--djui-current-surface-rgb));
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: var(--grid-row-height);
     padding: 0.25rem;
-    @include djui.djui-typography(numeric, $include-font-size: false);
 
     &--firstRow#{&}--firstColumn {
       border-top-left-radius: inherit;
@@ -71,16 +80,12 @@
       --djui-background-resolved: rgb(var(--djui-previous-surface-1-rgb, var(--djui-surface-0-rgb)));
     }
 
-    // The hovered cell's row and column: one step up, the hover wash the kit
-    // uses; the hovered cell itself two. Tinted cells mix their tint over it.
-    --tint-base: rgb(var(--djui-current-surface-rgb));
-
     &--highlighted {
       --tint-base: rgb(var(--djui-next-surface-1-rgb));
       --djui-background-resolved: var(--tint-base);
     }
 
-    &--focus {
+    &--pointed {
       --tint-base: rgb(var(--djui-next-surface-2-rgb));
       --djui-background-resolved: var(--tint-base);
     }
@@ -109,13 +114,6 @@
     }
   }
 
-  &__empty {
-    @include djui.djui-typography(body);
-    margin: 0;
-    padding-left: 1rem;
-    opacity: 0.6;
-  }
-
   &__cornerLabel {
     @include djui.djui-typography(caption);
     text-transform: uppercase;
@@ -124,15 +122,20 @@
     white-space: nowrap;
   }
 
-  // The cross highlight is the hover affordance; the button itself adds only
-  // the cursor and a keyboard ring.
+  // The cross highlight is the affordance; the button fills the cell (the
+  // whole cell is the tap target) and adds only the cursor and a keyboard ring.
+  &--editable &__cell {
+    padding: 0;
+  }
+
   &__button {
     all: unset;
     display: grid;
     place-items: center;
     width: 100%;
     height: 100%;
-    min-height: 2.5rem;
+    min-height: var(--grid-row-height);
+    box-sizing: border-box;
     cursor: pointer;
     @include djui.djui-focus-ring($offset: -0.125rem);
   }

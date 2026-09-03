@@ -3,6 +3,8 @@
 import { AuthTemplate, AuthTemplateHeader, AuthTemplateSection, Field, PinInput, TextLink } from "@bordfodbold/ui";
 import Link from "next/link";
 import { useState } from "react";
+
+import { SectionHeading } from "@/components/SectionHeading";
 import { createBem } from "use-bem";
 import "./styles.scss";
 
@@ -47,7 +49,9 @@ export function PinGate({ onSubmit, hint }: PinGateProps) {
     >
       <AuthTemplateSection>
         <div className={bem("intro")}>
-          <span className={bem("kicker")}>Admin</span>
+          <SectionHeading as="span" flush>
+            Admin
+          </SectionHeading>
           <h1 className={bem("title")}>Enter the PIN</h1>
           <p className={bem("lead")}>Results and teams can only be changed from here.</p>
         </div>

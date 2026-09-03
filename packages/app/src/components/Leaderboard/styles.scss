@@ -3,9 +3,10 @@
 .Leaderboard {
   @include djui.djui-typography(body);
 
+  // Sizes in em, so a screen that scales its type scales the rows with it.
   &--large {
-    font-size: 1.25rem;
-    --djui-component-table--row-min-height: 3.25rem;
+    font-size: 1.25em;
+    --djui-component-table--row-min-height: 2.6em;
   }
 
   &__rank {
@@ -26,12 +27,5 @@
       font-weight: 700;
       font-size: 1.125em;
     }
-  }
-
-  &__empty {
-    @include djui.djui-typography(body);
-    margin: 0;
-    padding-left: 1rem;
-    opacity: 0.6;
   }
 }

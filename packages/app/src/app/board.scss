@@ -50,13 +50,4 @@
       grid-area: activity;
     }
   }
-
-  &__heading {
-    @include djui.djui-typography(caption);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    opacity: 0.6;
-    margin: 0;
-    padding-left: 1rem;
-  }
 }

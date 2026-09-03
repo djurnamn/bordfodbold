@@ -77,3 +77,11 @@ describe("undoLastChange", () => {
     expect(t.activity).toHaveLength(4);
   });
 });
+
+describe("undoLastChange on a vanished match", () => {
+  it("refuses rather than reverting nothing", () => {
+    const t = applyScoreChange(tournament(["a", "b", "c"]), "a--b--1", [10, 4], stamp(1));
+    const withoutB = { ...t, teams: t.teams.filter((team) => team.id !== "b"), matches: t.matches.filter((match) => match.id !== "a--b--1") };
+    expect(() => undoLastChange(withoutB, stamp(2))).toThrow(DomainError);
+  });
+});

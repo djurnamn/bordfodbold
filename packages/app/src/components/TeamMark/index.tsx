@@ -14,15 +14,17 @@ interface TeamMarkProps extends ComponentPropsWithRef<"span"> {
   hideNameBelow?: "small";
   /** Which side of the name the emblem sits on. */
   emblemPosition?: "start" | "end";
+  /** Let a long name wrap instead of truncating, where the layout can grow. */
+  wrap?: boolean;
 }
 
 /** A team's identity in one glance: its color, its emblem, its name. */
-export function TeamMark({ team, size = "medium", emblemOnly = false, hideNameBelow, emblemPosition = "start", className, style, ...rest }: TeamMarkProps) {
+export function TeamMark({ team, size = "medium", emblemOnly = false, hideNameBelow, emblemPosition = "start", wrap = false, className, style, ...rest }: TeamMarkProps) {
   const bem = createBem("TeamMark");
   return (
     <span
       {...rest}
-      className={[bem(undefined, { [size]: true, emblemOnly, emblemEnd: emblemPosition === "end", [`hideNameBelow-${hideNameBelow}`]: hideNameBelow !== undefined }), className].filter(Boolean).join(" ")}
+      className={[bem(undefined, { [size]: true, emblemOnly, emblemEnd: emblemPosition === "end", wrap, [`hideNameBelow-${hideNameBelow}`]: hideNameBelow !== undefined }), className].filter(Boolean).join(" ")}
       style={{ ...teamColorStyle(team.color), ...style }}
       title={emblemOnly ? team.name : undefined}
     >

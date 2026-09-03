@@ -110,4 +110,20 @@ describe("LocalStore", () => {
     await store.loadDemoData();
     expect(latest.teams).toHaveLength(6);
   });
+
+  it("undoes the newest change and then the one before it", async () => {
+    const store = new LocalStore(options(new MemoryStorage()));
+    const tournament = await store.load();
+    await store.unlock("1234");
+    let latest = tournament;
+    store.subscribe((next) => (latest = next));
+    const [first, second] = tournament.matches.filter((match) => match.homeScore === null);
+    await store.setScore(first!.id, [10, 1]);
+    await store.setScore(second!.id, [10, 2]);
+    await store.undoLastChange();
+    expect(latest.matches.find((match) => match.id === second!.id)?.homeScore).toBeNull();
+    expect(latest.matches.find((match) => match.id === first!.id)?.homeScore).toBe(10);
+    await store.undoLastChange();
+    expect(latest.matches.find((match) => match.id === first!.id)?.homeScore).toBeNull();
+  });
 });

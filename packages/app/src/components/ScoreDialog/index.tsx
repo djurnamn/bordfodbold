@@ -1,12 +1,14 @@
 "use client";
 
-import { isPlayed, validateScore, type Match, type Score, type Tournament } from "@bordfodbold/domain";
+import { isPlayed, teamById, validateScore, type Match, type Score, type Tournament } from "@bordfodbold/domain";
 import { Button, Modal, Notice, NumberInput } from "@bordfodbold/ui";
 import { useEffect, useState, type FormEvent } from "react";
 import { createBem } from "use-bem";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { SectionHeading } from "@/components/SectionHeading";
 import { TeamMark } from "@/components/TeamMark";
+import { describeError, formatScore } from "@/lib/format";
 import "./styles.scss";
 
 interface ScoreDialogProps {
@@ -22,6 +24,8 @@ interface ScoreDialogProps {
  * winning score; the dialog says who wins as you type, refuses an unfinished
  * game, and asks once more before replacing a result already on the board.
  */
+const homeInputId = "score-dialog-home-goals";
+
 export function ScoreDialog({ tournament, match, pending, onSave, onClose }: ScoreDialogProps) {
   const bem = createBem("ScoreDialog");
   const [home, setHome] = useState<number | null>(null);
@@ -41,8 +45,8 @@ export function ScoreDialog({ tournament, match, pending, onSave, onClose }: Sco
   if (match === null) {
     return null;
   }
-  const homeTeam = tournament.teams.find((team) => team.id === match.homeTeamId);
-  const awayTeam = tournament.teams.find((team) => team.id === match.awayTeamId);
+  const homeTeam = teamById(tournament, match.homeTeamId);
+  const awayTeam = teamById(tournament, match.awayTeamId);
   if (homeTeam === undefined || awayTeam === undefined) {
     return null;
   }
@@ -52,7 +56,8 @@ export function ScoreDialog({ tournament, match, pending, onSave, onClose }: Sco
   const complete = home !== null && away !== null;
   const validation = complete ? validateScore([home, away], tournament.settings) : null;
   const unchanged = played && match.homeScore === home && match.awayScore === away;
-  const winner = validation?.ok ? (home! > away! ? homeTeam : awayTeam) : null;
+  const winner = complete && validation?.ok ? (home > away ? homeTeam : awayTeam) : null;
+  const recorded = played ? formatScore([match.homeScore, match.awayScore]) : null;
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
@@ -67,7 +72,7 @@ export function ScoreDialog({ tournament, match, pending, onSave, onClose }: Sco
       await onSave(match.id, [home, away]);
       onClose();
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error));
+      setFailure(describeError(error));
     }
   };
 
@@ -77,20 +82,22 @@ export function ScoreDialog({ tournament, match, pending, onSave, onClose }: Sco
       await onSave(match.id, null);
       onClose();
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error));
+      setFailure(describeError(error));
     }
   };
 
   return (
-    <Modal open onClose={onClose} label={`Result: ${homeTeam.name} versus ${awayTeam.name}`} width="small">
+    <Modal open onClose={onClose} label={`Result: ${homeTeam.name} versus ${awayTeam.name}`} width="small" initialFocus={() => document.getElementById(homeInputId)}>
       <form className={bem()} onSubmit={save}>
         <div className={bem("intro")}>
-          <span className={bem("kicker")}>{played ? "Change result" : "Enter result"}</span>
+          <SectionHeading as="span" flush>
+            {played ? "Change result" : "Enter result"}
+          </SectionHeading>
           <h2 className={bem("title")}>First to {goalsToWin}</h2>
         </div>
 
         <div className={bem("sides")}>
-          <ScoreSide bem={bem} team={homeTeam} value={home} max={goalsToWin} onChange={setHome} winner={winner?.id === homeTeam.id} />
+          <ScoreSide bem={bem} team={homeTeam} value={home} max={goalsToWin} onChange={setHome} winner={winner?.id === homeTeam.id} inputId={homeInputId} />
           <span className={bem("versus")} aria-hidden="true">
             –
           </span>
@@ -105,7 +112,7 @@ export function ScoreDialog({ tournament, match, pending, onSave, onClose }: Sco
 
         {confirmingReplace && (
           <Notice context="warning" title="This replaces a recorded result">
-            The board shows {match.homeScore}–{match.awayScore}. Save again to replace it; the change is logged.
+            The board shows {recorded}. Save again to replace it; the change is logged.
           </Notice>
         )}
         {failure !== null && <Notice context="error">{failure}</Notice>}
@@ -123,7 +130,7 @@ export function ScoreDialog({ tournament, match, pending, onSave, onClose }: Sco
         </div>
       </form>
       <ConfirmDialog open={confirmingClear} title="Clear this result?" confirmLabel="Clear result" destructive onCancel={() => setConfirmingClear(false)} onConfirm={clear}>
-        {homeTeam.name} {match.homeScore}–{match.awayScore} {awayTeam.name} goes back to unplayed. The change is logged and can be undone.
+        {homeTeam.name} {recorded} {awayTeam.name} goes back to unplayed. The change is logged and can be undone.
       </ConfirmDialog>
     </Modal>
   );
@@ -136,13 +143,14 @@ interface ScoreSideProps {
   max: number;
   winner: boolean;
   onChange: (value: number | null) => void;
+  inputId?: string;
 }
 
-function ScoreSide({ bem, team, value, max, winner, onChange }: ScoreSideProps) {
+function ScoreSide({ bem, team, value, max, winner, onChange, inputId }: ScoreSideProps) {
   return (
     <div className={bem("side", { winner })}>
       <TeamMark team={team} />
-      <NumberInput stepper min={0} max={max} value={value} onChange={onChange} inputProps={{ "aria-label": `${team.name} goals`, inputMode: "numeric" }} />
+      <NumberInput stepper min={0} max={max} value={value} onChange={onChange} inputProps={{ id: inputId, "aria-label": `${team.name} goals`, inputMode: "numeric" }} />
       <Button label={`${max}`} variant="soft" size={0.8} onClick={() => onChange(max)} aria-label={`${team.name} wins with ${max}`} />
     </div>
   );

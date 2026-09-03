@@ -1,5 +1,3 @@
-"use client";
-
 import { resolveMode, setMode, type DjuiMode } from "@bordfodbold/ui/scripts";
 import { useCallback, useEffect, useState } from "react";
 

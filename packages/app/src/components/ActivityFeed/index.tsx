@@ -1,11 +1,15 @@
 "use client";
 
-import type { ScoreChange, Team, Tournament } from "@bordfodbold/domain";
+import { teamById, type ScoreChange, type Team, type Tournament } from "@bordfodbold/domain";
 import { Table, type TableRow } from "@bordfodbold/ui";
+import { useRef } from "react";
 import { createBem } from "use-bem";
 
+import { EmptyState } from "@/components/EmptyState";
 import { TeamMark } from "@/components/TeamMark";
+import { formatScore } from "@/lib/format";
 import { clockTime, relativeTime, useNow } from "@/lib/time";
+import { useContainerWidth } from "@/lib/use-container-width";
 import "./styles.scss";
 
 interface ActivityFeedProps {
@@ -18,10 +22,13 @@ interface ActivityFeedProps {
 export function ActivityFeed({ tournament, limit = 8, density = "default" }: ActivityFeedProps) {
   const bem = createBem("ActivityFeed");
   const now = useNow();
+  const root = useRef<HTMLDivElement>(null);
+  // A narrow container has no room for the time column.
+  const narrow = useContainerWidth(root) < 440;
   const entries = tournament.activity.slice(0, limit);
 
   if (entries.length === 0) {
-    return <p className={bem("empty")}>No results entered yet.</p>;
+    return <EmptyState>No results entered yet.</EmptyState>;
   }
 
   const rows: TableRow[] = entries.map((change) => {
@@ -47,7 +54,7 @@ export function ActivityFeed({ tournament, limit = 8, density = "default" }: Act
   });
 
   return (
-    <div className={bem(undefined, { [density]: true })}>
+    <div className={bem(undefined, { [density]: true })} ref={root}>
       <Table
         nonInteractive
         hideHeader
@@ -55,10 +62,10 @@ export function ActivityFeed({ tournament, limit = 8, density = "default" }: Act
         striped
         separators="rows"
         columns={[
-          { key: "home", label: "Home", width: { fill: true, min: 120 }, align: "end" },
-          { key: "result", label: "Result", width: { fixed: 96 }, align: "center" },
-          { key: "away", label: "Away", width: { fill: true, min: 120 } },
-          { key: "when", label: "When", width: { fixed: 88 }, align: "end" },
+          { key: "home", label: "Home", width: { fill: true, min: narrow ? 88 : 120 }, align: "end" },
+          { key: "result", label: "Result", width: { fixed: narrow ? 72 : 96 }, align: "center" },
+          { key: "away", label: "Away", width: { fill: true, min: narrow ? 88 : 120 } },
+          ...(narrow ? [] : [{ key: "when", label: "When", width: { fixed: 88 }, align: "end" as const }]),
         ]}
         rows={rows}
       />
@@ -68,11 +75,10 @@ export function ActivityFeed({ tournament, limit = 8, density = "default" }: Act
 
 function describe(change: ScoreChange, tournament: Tournament): { home: Team | undefined; away: Team | undefined; result: string; previous: string | null } {
   const match = tournament.matches.find((candidate) => candidate.id === change.matchId);
-  const score = (value: readonly [number, number]) => `${value[0]}–${value[1]}`;
   return {
-    home: tournament.teams.find((team) => team.id === match?.homeTeamId),
-    away: tournament.teams.find((team) => team.id === match?.awayTeamId),
-    result: change.next === null ? "cleared" : score(change.next),
-    previous: change.previous === null ? null : score(change.previous),
+    home: match && teamById(tournament, match.homeTeamId),
+    away: match && teamById(tournament, match.awayTeamId),
+    result: change.next === null ? "cleared" : formatScore(change.next),
+    previous: change.previous === null ? null : formatScore(change.previous),
   };
 }

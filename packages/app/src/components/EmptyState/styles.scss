@@ -1,0 +1,8 @@
+@use "styles/mixins" as djui;
+
+.EmptyState {
+  @include djui.djui-typography(body);
+  margin: 0;
+  padding-left: 1rem;
+  opacity: 0.7;
+}

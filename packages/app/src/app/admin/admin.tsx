@@ -1,18 +1,21 @@
 "use client";
 
-import type { Match } from "@bordfodbold/domain";
+import { undoableChange, type Match } from "@bordfodbold/domain";
 import { Button, Tab, TabList, TabPanel, Tabs } from "@bordfodbold/ui";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createBem } from "use-bem";
 
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { ViewHeader } from "@/components/ViewHeader";
 import { ScoreDialog } from "@/components/ScoreDialog";
+import { SectionHeading } from "@/components/SectionHeading";
 import { SettingsForm } from "@/components/SettingsForm";
 import { TeamList } from "@/components/TeamList";
 import { TournamentGrid } from "@/components/TournamentGrid";
 import { useTournament, useTournamentCommands } from "@/store/provider";
 import "./admin.scss";
+
+const titleId = "admin-title";
 
 /** Results, teams, settings. Every change lands on every screen at once. */
 export function Admin() {
@@ -20,13 +23,19 @@ export function Admin() {
   const tournament = useTournament();
   const { commands, pending } = useTournamentCommands();
   const [editing, setEditing] = useState<Match | null>(null);
-  const lastChange = tournament.activity[0];
+  const undoable = undoableChange(tournament);
+
+  // The gate unmounts on unlock; focus lands on the title so a keyboard
+  // user continues from the top of the admin rather than from the page.
+  useEffect(() => {
+    document.getElementById(titleId)?.focus();
+  }, []);
 
   return (
     <div className={bem()}>
-      <ViewHeader kicker="Admin · manage your tournament" title={tournament.name} updatedAt={tournament.updatedAt} />
+      <ViewHeader className={bem("header")} titleId={titleId} kicker="Admin · manage your tournament" title={tournament.name} updatedAt={tournament.updatedAt} />
 
-      <Tabs defaultValue="results" className={bem("tabs")}>
+      <Tabs defaultValue="results">
         <TabList>
           <Tab value="results">Results</Tab>
           <Tab value="teams">Teams</Tab>
@@ -38,9 +47,9 @@ export function Admin() {
             <p className={bem("help")}>Tap a cell to enter or change a result. A cell reads from its row team&apos;s side.</p>
             <TournamentGrid tournament={tournament} onSelectMatch={setEditing} />
             <div className={bem("toolbar")}>
-              <Button label={lastChange === undefined ? "Nothing to undo" : "Undo last change"} variant="soft" disabled={lastChange === undefined || pending} onClick={() => void commands.undoLastChange()} />
+              <Button label={undoable === undefined ? "Nothing to undo" : "Undo last change"} variant="soft" disabled={undoable === undefined || pending} onClick={() => commands.undoLastChange().catch(() => undefined)} />
             </div>
-            <h2 className={bem("heading")}>Change log</h2>
+            <SectionHeading>Change log</SectionHeading>
             <ActivityFeed tournament={tournament} limit={12} />
           </section>
         </TabPanel>

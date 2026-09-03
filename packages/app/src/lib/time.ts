@@ -1,10 +1,8 @@
-"use client";
-
 import { useEffect, useState } from "react";
 
 /** "just now", "4 min ago", "2 h ago", or a date for anything older. */
-export function relativeTime(iso: string, now: number = Date.now()): string {
-  const seconds = Math.round((now - new Date(iso).getTime()) / 1000);
+export function relativeTime(isoTimestamp: string, now: number = Date.now()): string {
+  const seconds = Math.round((now - new Date(isoTimestamp).getTime()) / 1000);
   if (seconds < 45) {
     return "just now";
   }
@@ -16,19 +14,19 @@ export function relativeTime(iso: string, now: number = Date.now()): string {
   if (hours < 24) {
     return `${hours} h ago`;
   }
-  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  return new Date(isoTimestamp).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
-export function clockTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+export function clockTime(isoTimestamp: string): string {
+  return new Date(isoTimestamp).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 }
 
-/** A `Date.now()` that re-renders the caller every `everyMs`. */
-export function useNow(everyMs = 30_000): number {
+/** A `Date.now()` that re-renders the caller every `intervalMilliseconds`. */
+export function useNow(intervalMilliseconds = 30_000): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), everyMs);
+    const timer = setInterval(() => setNow(Date.now()), intervalMilliseconds);
     return () => clearInterval(timer);
-  }, [everyMs]);
+  }, [intervalMilliseconds]);
   return now;
 }

@@ -1,25 +1,36 @@
 @use "styles/mixins" as djui;
 
 .TeamMark {
+  // Contains the visually hidden name, which is absolutely positioned.
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.5em;
   min-width: 0;
   max-width: 100%;
-  --team-mark-size: 1.75rem;
+  --team-mark-size: 1.75em;
 
   &--small {
-    --team-mark-size: 1.375rem;
+    --team-mark-size: 1.5em;
     font-size: 0.875em;
   }
 
   &--large {
-    --team-mark-size: 2.5rem;
+    --team-mark-size: 2.5em;
     font-size: 1.125em;
   }
 
   &--emblemEnd {
     flex-direction: row-reverse;
+  }
+
+  &--wrap {
+    align-items: flex-start;
+  }
+
+  &--wrap &__name {
+    white-space: normal;
+    overflow: visible;
   }
 
   &__emblem {

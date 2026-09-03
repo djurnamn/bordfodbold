@@ -41,11 +41,4 @@
   &__undoLabel {
     @include djui.djui-typography(label, $include-font-size: false);
   }
-
-  &__empty {
-    @include djui.djui-typography(body);
-    margin: 0;
-    padding-left: 1rem;
-    opacity: 0.6;
-  }
 }

@@ -6,8 +6,10 @@ import { useState } from "react";
 import { createBem } from "use-bem";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { EmptyState } from "@/components/EmptyState";
 import { TeamDialog } from "@/components/TeamDialog";
 import { TeamMark } from "@/components/TeamMark";
+import { formatMembers } from "@/lib/format";
 import { newTeamId } from "@/lib/ids";
 import "./styles.scss";
 
@@ -35,7 +37,7 @@ export function TeamList({ tournament, pending, onSave, onRemove }: TeamListProp
 
   return (
     <div className={bem()}>
-      {tournament.teams.length === 0 && <p className={bem("empty")}>No teams yet. Add the first one below.</p>}
+      {tournament.teams.length === 0 && <EmptyState>No teams yet. Add the first one below.</EmptyState>}
       {tournament.teams.length > 0 && (
       <div className={bem("frame")} data-djui-next-surface="">
       <ul className={bem("teams")}>
@@ -44,7 +46,7 @@ export function TeamList({ tournament, pending, onSave, onRemove }: TeamListProp
             <span className={bem("mark")}>
               <TeamMark team={team} size="large" />
             </span>
-            <span className={bem("members")}>{team.members.join(" · ") || "No members yet"}</span>
+            <span className={bem("members")}>{formatMembers(team.members)}</span>
             <span className={bem("teamActions")}>
               <Button label="Edit" variant="soft" size={0.85} onClick={() => setEditing({ team, creating: false })} />
               <Button label="Remove" variant="plain" size={0.85} color="context-negative" onClick={() => setRemoving(team)} />

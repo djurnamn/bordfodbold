@@ -16,6 +16,8 @@ interface ConfirmDialogProps {
 }
 
 /** A question with two answers. Escape and the backdrop mean no. */
+const cancelId = "confirm-dialog-cancel";
+
 export function ConfirmDialog({ open, title, children, confirmLabel, destructive = false, onConfirm, onCancel }: ConfirmDialogProps) {
   const bem = createBem("ConfirmDialog");
   return (
@@ -25,9 +27,10 @@ export function ConfirmDialog({ open, title, children, confirmLabel, destructive
       label={title}
       role="alertdialog"
       width="small"
+      initialFocus={() => document.getElementById(cancelId)}
       actions={
         <>
-          <Button label="Cancel" variant="plain" onClick={onCancel} />
+          <Button id={cancelId} label="Cancel" variant="plain" onClick={onCancel} />
           <Button label={confirmLabel} variant="solid" color={destructive ? "context-negative" : undefined} onClick={onConfirm} />
         </>
       }

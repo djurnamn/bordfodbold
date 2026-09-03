@@ -5,11 +5,12 @@ import { createBem } from "use-bem";
 
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { Leaderboard } from "@/components/Leaderboard";
+import { SectionHeading } from "@/components/SectionHeading";
 import { TeamLegend } from "@/components/TeamLegend";
 import { TeamMark } from "@/components/TeamMark";
 import { TournamentGrid } from "@/components/TournamentGrid";
 import { ViewHeader } from "@/components/ViewHeader";
-import { useNow } from "@/lib/time";
+import { clockTime, useNow } from "@/lib/time";
 import { useStandings, useTournament } from "@/store/provider";
 import "./screen.scss";
 
@@ -36,28 +37,28 @@ export function Screen() {
         menu={false}
         aside={
           <time className={bem("clock")} dateTime={new Date(now).toISOString()}>
-            {new Date(now).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" })}
+            {clockTime(new Date(now).toISOString())}
           </time>
         }
       />
 
       <section className={bem("panel", { standings: true })} aria-label="Leaderboard">
-        <h2 className={bem("heading")}>Leaderboard</h2>
+        <SectionHeading>Leaderboard</SectionHeading>
         <Leaderboard tournament={tournament} standings={standings} size="large" />
       </section>
 
       <section className={bem("panel", { plan: true })} aria-label="Tournament plan">
-        <h2 className={bem("heading")}>Tournament plan</h2>
+        <SectionHeading>Tournament plan</SectionHeading>
         <TournamentGrid tournament={tournament} size="large" />
       </section>
 
       <section className={bem("panel", { teams: true })} aria-label="Teams">
-        <h2 className={bem("heading")}>Teams</h2>
+        <SectionHeading>Teams</SectionHeading>
         <TeamLegend teams={tournament.teams} columns={2} density="compact" />
       </section>
 
-      <section className={bem("panel", { next: true })} aria-label="Upcoming Games">
-        <h2 className={bem("heading")}>Upcoming Games</h2>
+      <section className={bem("panel", { next: true })} aria-label="Upcoming games">
+        <SectionHeading>Upcoming games</SectionHeading>
         {nextUp.length === 0 ? (
           <p className={bem("done")}>Every match is played. Congratulations{leader ? `, ${leader.name}` : ""}.</p>
         ) : (
@@ -67,9 +68,9 @@ export function Screen() {
               const away = tournament.teams.find((team) => team.id === match.awayTeamId);
               return home && away ? (
                 <li key={match.id} className={bem("nextMatch")}>
-                  <TeamMark team={home} size="small" />
+                  <TeamMark team={home} size="small" wrap />
                   <span className={bem("versus")}>vs</span>
-                  <TeamMark team={away} size="small" />
+                  <TeamMark team={away} size="small" wrap />
                 </li>
               ) : null;
             })}
@@ -78,8 +79,8 @@ export function Screen() {
       </section>
 
       <section className={bem("panel", { latest: true })} aria-label="Latest results">
-        <h2 className={bem("heading")}>Latest results</h2>
-        <ActivityFeed tournament={tournament} limit={4} density="compact" />
+        <SectionHeading>Latest results</SectionHeading>
+        <ActivityFeed tournament={tournament} limit={6} density="compact" />
       </section>
     </div>
   );

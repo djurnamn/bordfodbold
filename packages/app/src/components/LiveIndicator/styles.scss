@@ -12,7 +12,14 @@
     border-radius: 50%;
     background: djui.get(context, positive);
     box-shadow: 0 0 0 0 djui.get(context, positive, 0.6);
-    animation: LiveIndicator-pulse 2s infinite;
+
+    @media (prefers-reduced-motion: no-preference) {
+      animation: LiveIndicator-pulse 2s infinite;
+    }
+  }
+
+  &__status {
+    @include djui.djui-visually-hidden;
   }
 
   &__label {
@@ -22,7 +29,7 @@
   }
 
   &__updated {
-    opacity: 0.6;
+    opacity: 0.7;
   }
 }
 

@@ -85,10 +85,19 @@ describe("renameTournament", () => {
 });
 
 describe("nextFreeColor", () => {
-  it("skips colours in use", () => {
+  it("skips colors in use", () => {
     const t = tournament(["a", "b"]);
     // Fixtures are all violet.
     expect(nextFreeColor(t)).toBe("green");
     expect(nextFreeColor(tournament([]))).toBe("violet");
+  });
+
+  it("falls back to the least used color once every color is taken", () => {
+    const colors = ["violet", "green", "magenta", "yellow", "blue", "orange", "aqua", "coral"] as const;
+    const t = tournament("abcdefgh".split(""));
+    const painted = { ...t, teams: t.teams.map((member, index) => ({ ...member, color: colors[index]! })) };
+    // A ninth team cannot join, but a repainted one asks the same question.
+    const twoViolets = { ...painted, teams: painted.teams.map((member, index) => (index === 1 ? { ...member, color: "violet" as const } : member)) };
+    expect(nextFreeColor(twoViolets)).toBe("green");
   });
 });
